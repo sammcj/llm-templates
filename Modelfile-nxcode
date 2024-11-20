@@ -1,0 +1,48 @@
+#  ollama create nxcode-cq-7b-orpo-bartowski:q6_k -f modelfiles/Modelfile-nxcode
+#  ollama push nxcode-cq-7b-orpo-bartowski:q6_k
+
+#  FROM ../Nxcode-CQ-7B-orpo-Q6_K.gguf
+FROM /home/llm/.ollama/models/blobs/sha256-438225d7056615bbc11cc8ef9cfac1bd76f3fe91782bf907ac75f1f6d9295514
+
+TEMPLATE """
+{{ if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+{{ end }}<|im_start|>assistant
+{{ .Response }}<|im_end|>
+"""
+
+PARAMETER stop "</s>"
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+
+
+# Default is 512 in Ollama, higher means more memory usage but faster if it can fit in VRAM
+PARAMETER num_batch 2048
+####
+
+## For codegen ##
+PARAMETER num_ctx 32768
+PARAMETER num_keep 384
+PARAMETER temperature 0.4
+PARAMETER top_p 0.9
+PARAMETER presence_penalty 0.2
+PARAMETER frequency_penalty 0.2
+PARAMETER repeat_last_n 50
+
+
+#  SYSTEM """
+#  You are an expert software engineer proficient in multiple programming languages. Your task is to generate, complete, and refactor code snippets based on the given instructions. Provide clean, efficient, and well-commented code.
+
+#  Remember:
+#  - Follow best practices and the latest conventions.
+#  - Use the most current libraries, functions, and best practices. Avoid deprecated methods and outdated conventions.
+#  - Ensure the code is easy to understand and maintain.
+#  - Prefer British English spelling.
+#  - Output the filename and line number when providing code snippets if you know them.
+#  - When updating functions output the entire updated function.
+#  - Think carefully about what the user is requesting and the provided context of our chat and code.
+
+#  Avoid explanations unless explicitly prompted. Be concise and focus on the task.
+#  """

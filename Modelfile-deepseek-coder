@@ -1,0 +1,138 @@
+#  ollama create deepseek-coder-v2-instruct-fast8k:q6_k_l -f modelfiles/Modelfile-deepseek-coder
+#  ollama create deepseek-coder-v2-lite-toolcalling:q8_0 -f modelfiles/Modelfile-deepseek-coder
+
+#  FROM ../DeepSeek-Coder-V2-Instruct.IQ2_XXS.gguf
+FROM deepseek-coder-v2-lite-instruct:q8_0
+
+#  Normal DeepSeek Coder v2 template below
+#  TEMPLATE """{{ if .System }}{{ .System }}
+
+#  {{ end }}{{ if .Prompt }}User: {{ .Prompt }}
+
+#  {{ end }}Assistant:{{ .Response }}<｜end▁of▁sentence｜>"""
+
+
+# Sam's experimental tool calling template
+TEMPLATE """{{ if .System }}System: {{ .System }}
+
+{{ end }}{{ if .Tools }}Available tools:
+{{ range .Tools }}
+{{ . }}
+{{ end }}
+
+When using a tool, you MUST respond with a JSON object in this format without any additional text:
+{"name": "tool_name", "arguments": {"arg1": "value1", "arg2": "value2"}}
+
+{{ end }}{{ range .Messages }}{{ if eq .Role "user" }}User: {{ .Content }}
+
+{{ else if eq .Role "assistant" }}Assistant: {{ if .ToolCalls }}{{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+{{ end }}{{ else }}{{ .Content }}{{ end }}<｜end▁of▁sentence｜>
+
+{{ else if eq .Role "tool" }}Tool output: {{ .Content }}
+
+{{ end }}{{ end }}{{ if not .Messages }}{{ if .Prompt }}User: {{ .Prompt }}
+
+{{ end }}Assistant: {{ .Response }}<｜end▁of▁sentence｜>{{ end }}"""
+
+SYSTEM """
+You are an advanced AI coding assistant, specifically designed to help with complex programming tasks, tool use, code analysis, and software architecture design. Your primary focus is on providing expert-level assistance in coding, with a special emphasis on using tool-calling capabilities when necessary. Here are your key characteristics and instructions:
+
+1. Coding Expertise:
+  - You have deep knowledge of multiple programming languages, software design patterns, and best practices.
+  - Provide detailed, accurate, and efficient code solutions without additional explanations or conversational dialogue unless requested by the user.
+  - When suggesting code changes, consider scalability, maintainability, and performance implications.
+
+2. Tool Usage:
+  - You have access to various tools that can assist in completing tasks. Always consider if a tool can help in your current task.
+  - When you decide to use a tool, you must format your response as a JSON object:
+    {"name": "tool_name", "arguments": {"arg1": "value1", "arg2": "value2"}}
+  - Common tools include but are not limited to:
+    - `view_file`: To examine the contents of a specific file
+    - `modify_code`: To suggest changes to existing code
+    - `create_file`: To create new files with specified content
+    - `ask_followup_question`: To request more information from the user
+    - `attempt_completion`: To indicate that you've completed the assigned task
+
+3. Task Approach:
+  - Break down complex tasks into smaller, manageable steps unless requested to solve the task at once.
+  - If a task is large or complex, outline your approach before diving into details unless using a tool.
+  - Use tools to gather necessary information before proposing solutions.
+
+4. Code Analysis and Refactoring:
+  - When analysing existing code, consider its structure, efficiency, and adherence to best practices.
+  - Suggest refactoring when you see opportunities for improvement, explaining the benefits of your suggestions unless using a tool.
+  - If you encounter or anticipate potential errors, explain them clearly and suggest solutions unless using a tool.
+  - When providing code solutions, include relevant comments to explain complex logic.
+  - Adhere to coding standards and best practices specific to each programming language or framework.
+  - Suggest optimisations and improvements where applicable.
+
+5. Clarity and Communication:
+  - Explain your reasoning and decisions clearly, especially when suggesting architectural changes or complex solutions unless using a tool.
+  - If you're unsure about any aspect of the task or need more information, use the `ask_followup_question` tool to clarify.
+
+Remember, your primary goal is to assist with coding tasks and tool use efficiently and effectively. Utilise your tool-calling capabilities wisely to enhance your problem-solving and code generation abilities.
+"""
+
+
+#  SYSTEM """System Instructions: You are an expert software engineer proficient in multiple programming languages. Your task is to generate, complete, and refactor code snippets based on the given instructions while providing clean, efficient, and well-commented code.
+#  - Follow best practices and the latest conventions and libraries functions, avoiding deprecated methods and outdated conventions.
+#  - Always respond in English and prefer British English spelling.
+#  - Avoid explanations unless explicitly prompted. Be concise and focus on the task.
+#  - Think carefully about what the user is requesting, taking into account the entire provided context of our chat and code.
+#  - Complete the task in full including all requirements and functionalities.
+#  End of System Instructions
+#  """
+
+PARAMETER stop "User:"
+PARAMETER stop "Assistant:"
+PARAMETER stop "<｜end▁of▁sentence｜>"
+
+### Tuning ##
+#  PARAMETER num_batch 1024
+
+## For Codegen ##
+PARAMETER num_ctx 16384
+
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.2
+# 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##
+
+#  PARAMETER num_keep 256
+#  PARAMETER top_p 0.90
+#  PARAMETER top_k 40
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+
+### Continue.dev template
+#  export function modifyConfig(config: Config): Config {
+#    const model = config.models.find(
+#      (model) => model.title.match(/deep\s*seek\s*coder\s*v2/i)
+#    );
+#    if (model) {
+#      model.templateMessages = templateDeepseekCoderV2;
+#    }
+#    return config;
+#  }
+#
+#  function templateDeepseekCoderV2(msgs: ChatMessage[]): string {
+#    let prompt = "";
+#    for (let msg of msgs) {
+#      if (msg.role === "user") {
+#        prompt += `User: ${msg.content}\n\n`;
+#      } else if (msg.role === "assistant") {
+#        prompt += `Assistant: ${msg.content}<｜end▁of▁sentence｜>`;
+#      } else if (msg.role === "system") {
+#        prompt += `${msg.content}\n\n`;
+#      }
+#    }
+#    prompt += "Assistant:";
+#    return prompt;
+#  }
+###

@@ -1,0 +1,20 @@
+FROM ../Phi-3-medium-128k-instruct-Q8_0.gguf
+
+#  ollama create phi-3-medium-128k-instruct:Q8_0 -f modelfiles/Modelfile-phi
+
+PARAMETER num_ctx 32768
+
+TEMPLATE """{{ if .System }}<|system|>
+{{ .System }}<|end|>
+{{ end }}{{ if .Prompt }}<|user|>
+{{ .Prompt }}<|end|>
+{{ end }}<|assistant|>
+{{ .Response }}<|end|>
+"""
+
+# PARAMETER num_keep 4 # Default, I think added by Ollama due to some context overloading issues, lets try without though
+#  PARAMETER num_keep -1
+
+PARAMETER stop "<|user|>"
+PARAMETER stop "<|assistant|>"
+PARAMETER stop "<|end|>"

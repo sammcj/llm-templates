@@ -1,0 +1,21 @@
+{
+    "name": "MikeRoz_c4ai-command-r-plus-08-2024-3.5bpw-h6-exl2",
+    "max_seq_len": 16384,
+    "override_base_seq_len": null,
+    "cache_size": 32768,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "cache_mode": "Q4",
+    "prompt_template": "cohere-command-r-2024-08",
+    "num_experts_per_token": null,
+    "draft_model_name": null,
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_cache_mode": "Q4",
+    "fasttensors": true,
+    "tensor_parallel": false,
+    "autosplit_reserve": "96",
+    "chunk_size": null
+}

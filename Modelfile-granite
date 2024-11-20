@@ -1,0 +1,39 @@
+#  ollama create granite-34b-code-instruct-bartowski:q4_k_m -f Modelfile-granite
+#  ollama push granite-34b-code-instruct-bartowski:q4_k_m
+
+FROM ./granite-34b-code-instruct-Q4_K_M.gguf
+
+SYSTEM "You are an AI assistant and expert coder, carefully consider the users question and complete their request making sure you meet all requirements. Output your responses with markdown formatting unless requested otherwise."
+
+PARAMETER temperature 0.7
+#PARAMETER num_keep -1
+# PARAMETER num_ctx 8192
+
+TEMPLATE """{{ if .System }}System: {{ .System }}{{ end }}
+
+Question:
+{{ .Prompt }}<|eot_id|>
+
+Answer:
+{{ .Response }}<|endoftext|>"""
+
+PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<end of code>"
+PARAMETER stop "<|eot_id|>"
+
+# PARAMETER stop "<|system|>"
+# PARAMETER stop "<|user|>"
+# PARAMETER stop "<|assistant|>"
+
+# PARAMETER stop "<|start_header_id|>"
+# PARAMETER stop "<|end_header_id|>"
+
+# PARAMETER stop "<|im_start|>"
+# PARAMETER stop "<|im_end|>"
+# PARAMETER stop "<|im_done|>"
+# PARAMETER stop "</s>"
+
+# PARAMETER stop "<|system|>"
+# PARAMETER stop "<|user|>"
+# PARAMETER stop "<|assistant|>"
+

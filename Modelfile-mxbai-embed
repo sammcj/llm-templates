@@ -1,0 +1,6 @@
+
+# ollama create sammcj/mxbai-embed-large-v1:q8_0 -f modelfiles/Modelfile-mxbai-embed
+
+FROM ../mxbai-embed-large-v1-q8_0.gguf
+
+PARAMETER num_ctx 512

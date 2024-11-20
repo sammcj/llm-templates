@@ -1,0 +1,81 @@
+#  ollama create reflection-llama-3.1-70b:Q4_K_M -f modelfiles/Modelfile-llama3.1
+
+#  FROM ../llama-3-1-8b-smcleod-golang-coder-v3.etf16-Q8_0.gguf
+FROM ../Reflection-Llama-3.1-70B-q4_k_m.gguf
+
+
+#  template version 948af2743fc7 2024-09-18 (with my spelling fix for 'original')
+TEMPLATE """{{- if or .System .Tools }}<|start_header_id|>system<|end_header_id|>
+{{- if .System }}
+
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+
+Cutting Knowledge Date: December 2023
+
+When you receive a tool call response, use the output to format an answer to the orginal user question.
+
+You are a helpful assistant with tool calling capabilities.
+{{- end }}<|eot_id|>
+{{- end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<|start_header_id|>user<|end_header_id|>
+{{- if and $.Tools $last }}
+
+Given the following functions, please respond with a JSON for a function call with its proper arguments that best answers the given prompt.
+
+Respond in the format {"name": function name, "parameters": dictionary of argument name and its value}. Do not use variables.
+
+{{ range $.Tools }}
+{{- . }}
+{{ end }}
+Question: {{ .Content }}<|eot_id|>
+{{- else }}
+
+{{ .Content }}<|eot_id|>
+{{- end }}{{ if $last }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ end }}
+{{- else if eq .Role "assistant" }}<|start_header_id|>assistant<|end_header_id|>
+{{- if .ToolCalls }}
+{{ range .ToolCalls }}
+{"name": "{{ .Function.Name }}", "parameters": {{ .Function.Arguments }}}{{ end }}
+{{- else }}
+
+{{ .Content }}
+{{- end }}{{ if not $last }}<|eot_id|>{{ end }}
+{{- else if eq .Role "tool" }}<|start_header_id|>ipython<|end_header_id|>
+
+{{ .Content }}<|eot_id|>{{ if $last }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ end }}
+{{- end }}
+{{- end }}"""
+
+
+PARAMETER num_ctx 32768
+#  PARAMETER num_batch 64
+
+PARAMETER stop "<|start_header_id|>"
+PARAMETER stop "<|end_header_id|>"
+PARAMETER stop "<|eot_id|>"
+
+
+## For codegen ##
+#  PARAMETER temperature 0.3
+#  PARAMETER top_p 0.8
+
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.2
+# 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##

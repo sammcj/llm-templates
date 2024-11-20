@@ -1,0 +1,22 @@
+{
+    "name": "Apel-sin_nxcode-CQ-7B-orpo-exl2",
+    "max_seq_len": 40960,
+    "override_base_seq_len": null,
+    "cache_size": 81920,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "model_rope_alpha_auto": true,
+    "cache_mode": "Q4",
+    "prompt_template": "qwen2",
+    "num_experts_per_token": null,
+    "draft_model_name": null,
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_rope_alpha_auto": false,
+    "draft_cache_mode": "Q4",
+    "tensor_parallel": true,
+    "autosplit_reserve": "",
+    "chunk_size": 8192
+}

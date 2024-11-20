@@ -1,0 +1,33 @@
+#  ollama create llama-3.2-90b-instruct:q4_K_M -f modelfiles/Modelfile-llama3.2-vision
+
+#  FROM ../Llama-3.2-11B-Instruct-Q8_0.gguf
+FROM llama3.2-vision:90b-instruct-q4_K_M
+
+#  template version 715415638c9c 2024-11-20
+TEMPLATE """{{- range $index, $_ := .Messages }}<|start_header_id|>{{ .Role }}<|end_header_id|>
+
+{{ .Content }}
+{{- if gt (len (slice $.Messages $index)) 1 }}<|eot_id|>
+{{- else if ne .Role "assistant" }}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+{{ end }}
+{{- end }}"""
+
+PARAMETER stop "<|start_header_id|>"
+PARAMETER stop "<|end_header_id|>"
+PARAMETER stop "<|eot_id|>"
+
+PARAMETER num_ctx 32768
+PARAMETER num_batch 1024
+
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.6
+# 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##
+
+#  PARAMETER temperature 0.6
+#  PARAMETER top_p 0.9

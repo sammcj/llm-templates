@@ -1,0 +1,54 @@
+#  ollama create gemma-2-9b-it-sppo-iter3:q5_k_M -f modelfiles/Modelfile-gemma
+
+FROM ../gemma-2-9b-it-sppo-iter3-q5_k_m-imat.gguf
+#  FROM ../gemma-2-27b-it-Q6_K_L.gguf
+
+TEMPLATE """<start_of_turn>user
+{{ if .System }}{{ .System }} {{ end }}{{ .Prompt }}<end_of_turn>
+<start_of_turn>model
+{{ .Response }}<end_of_turn>
+"""
+
+PARAMETER stop "<start_of_turn>"
+PARAMETER stop "<end_of_turn>"
+
+### Tuning ##
+PARAMETER num_batch 1024
+#  PARAMETER num_batch 1024
+
+## For codegen ##
+PARAMETER num_ctx 8192
+
+#  PARAMETER num_keep 512
+#  PARAMETER temperature 0.4
+#  PARAMETER top_p 0.9
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+# default repetition penalty is 1.1, gemma likes 1.0
+PARAMETER repeat_penalty 1.0
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.2
+# 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##
+
+
+#  SYSTEM """
+#  You are an expert software engineer proficient in multiple programming languages. Your task is to generate, complete, and refactor code snippets based on the given instructions. Provide clean, efficient, and well-commented code.
+
+#  Remember:
+#  - Follow best practices and the latest conventions.
+#  - Use the most current libraries, functions, and best practices. Avoid deprecated methods and outdated conventions.
+#  - Ensure the code is easy to understand and maintain.
+#  - Prefer British English spelling.
+#  - Output the filename and line number when providing code snippets if you know them.
+#  - When updating functions output the entire updated function.
+#  - Think carefully about what the user is requesting and the provided context of our chat and code.
+
+#  Avoid explanations unless explicitly prompted. Be concise and focus on the task.
+#  """

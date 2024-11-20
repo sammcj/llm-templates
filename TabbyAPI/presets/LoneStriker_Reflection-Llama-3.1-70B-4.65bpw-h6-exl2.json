@@ -1,0 +1,21 @@
+{
+    "name": "LoneStriker_Reflection-Llama-3.1-70B-4.65bpw-h6-exl2",
+    "max_seq_len": 8192,
+    "override_base_seq_len": null,
+    "cache_size": 32768,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "cache_mode": "Q4",
+    "prompt_template": "llama-3-chat",
+    "num_experts_per_token": null,
+    "draft_model_name": "",
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_cache_mode": "Q4",
+    "fasttensors": true,
+    "tensor_parallel": true,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}

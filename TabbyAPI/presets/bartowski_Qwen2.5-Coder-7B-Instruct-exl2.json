@@ -1,0 +1,22 @@
+{
+    "name": "bartowski_Qwen2.5-Coder-7B-Instruct-exl2",
+    "max_seq_len": 65536,
+    "override_base_seq_len": 1,
+    "cache_size": 131072,
+    "gpu_split_auto": false,
+    "gpu_split": "23.6,0,0",
+    "rope_scale": 1,
+    "rope_alpha": 1,
+    "model_rope_alpha_auto": true,
+    "cache_mode": "Q4",
+    "prompt_template": "qwen2.5-toolcalling-experimental",
+    "num_experts_per_token": null,
+    "draft_model_name": "",
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_rope_alpha_auto": false,
+    "draft_cache_mode": "Q4",
+    "tensor_parallel": true,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}

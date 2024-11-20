@@ -1,0 +1,22 @@
+{
+    "name": "LoneStriker_Qwen2-72B-Instruct-3.5bpw-h6-exl2",
+    "max_seq_len": 16384,
+    "override_base_seq_len": 1,
+    "cache_size": 32768,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": 1,
+    "rope_alpha": 1,
+    "model_rope_alpha_auto": false,
+    "cache_mode": "Q4",
+    "prompt_template": "qwen2.5-toolcalling-experimental",
+    "num_experts_per_token": null,
+    "draft_model_name": "bartowski_Qwen2.5-7B-Instruct-exl2",
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_rope_alpha_auto": false,
+    "draft_cache_mode": "Q4",
+    "tensor_parallel": true,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}

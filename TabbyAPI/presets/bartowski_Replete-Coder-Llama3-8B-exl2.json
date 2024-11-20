@@ -1,0 +1,20 @@
+{
+    "name": "bartowski_Replete-Coder-Llama3-8B-exl2",
+    "max_seq_len": 8192,
+    "override_base_seq_len": 1,
+    "cache_size": 16384,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": 1,
+    "rope_alpha": 1,
+    "cache_mode": "Q8",
+    "prompt_template": "llama-3-chat",
+    "num_experts_per_token": null,
+    "draft_model_name": null,
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_cache_mode": "FP16",
+    "fasttensors": true,
+    "autosplit_reserve": 96,
+    "chunk_size": 4096
+}

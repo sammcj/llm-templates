@@ -1,0 +1,18 @@
+{# Metadata #}
+{% set stop_strings = ["[INST]", "[/INST]"] %}
+
+{{- bos_token -}}
+{% if bos_token|length > 0 %}
+    {{- ' ' -}}
+{% endif %}
+{% for message in messages %}
+    {% if message['role'] == 'system' %}
+        {{- message['content'] -}}
+    {% elif message['role'] == 'user' %}
+        {{- '[INST] ' + message['content'] + ' [/INST]' -}}
+    {% elif message['role'] == 'assistant' %}
+        {{- message['content'] + eos_token -}}
+    {% else %}
+        {{ raise_exception('Only user, assistant, and system roles are supported!') }}
+    {% endif %}
+{% endfor %}

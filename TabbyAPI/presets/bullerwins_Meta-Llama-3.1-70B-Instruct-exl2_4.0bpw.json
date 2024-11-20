@@ -1,0 +1,20 @@
+{
+    "name": "bullerwins_Meta-Llama-3.1-70B-Instruct-exl2_4.0bpw",
+    "max_seq_len": 32768,
+    "override_base_seq_len": null,
+    "cache_size": 65536,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "cache_mode": "Q4",
+    "prompt_template": "llama-3-chat",
+    "num_experts_per_token": null,
+    "draft_model_name": "LoneStriker_Meta-Llama-3.1-8B-Instruct-3.0bpw-h6-exl2",
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_cache_mode": "Q4",
+    "fasttensors": true,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}

@@ -1,0 +1,46 @@
+#  ollama create openchat-3.6-8b-20240522-bartowski:q6_k -f Modelfile-openchat
+#  ollama push openchat-3.6-8b-20240522-bartowski:q6_k
+
+#  PARAMETER num_ctx 8192
+
+FROM ./openchat-3.6-8b-20240522-Q6_K.gguf
+
+#  TEMPLATE """
+#  {{ .System }}<|end_of_turn|>GPT4 Correct User: {{ .Prompt }}<|end_of_turn|>GPT4 Correct Assistant:
+#  """
+TEMPLATE """
+{{ if .System }}<|begin_of_text|><|start_header_id|><|end_header_id|>{{ end }}
+
+{{ if .Prompt }}GPT4 Correct User: {{ .Prompt }}<|eot_id|>{{ end }}<|start_header_id|>GPT4 Correct Assistant<|end_header_id|>
+{{ .Response }}<|eot_id|>
+"""
+
+PARAMETER stop "<|end_of_turn|>"
+PARAMETER stop "<|eot_id|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER stop "Assistant:"
+PARAMETER stop "GPT4 Correct User:"
+PARAMETER stop "GPT4 Correct Assistant"
+
+#  # OpenChat:7B_v3.5-16K
+#  # TAGS: GPT 3, GPT 3.5, GPT 3.5-Turbo, GPT4, General, Censored
+
+#  FROM /mnt/ollama/models/openchat_3.5-16k.Q5_K_M.gguf
+
+#  TEMPLATE """{{ .System }}<|end_of_turn|>GPT4 Correct User: {{ .Prompt }}<|end_of_turn|>GPT4 Correct Assistant:"""
+
+#  SYSTEM """You are a large language model known as OpenChat. You're a very helpful AI assistant with diverse knowledge."""
+
+#  PARAMETER stop "<|endoftext|>"
+#  PARAMETER stop "<|end_of_turn|>"
+#  PARAMETER stop "<|im_sep|>"
+#  PARAMETER stop "Assistant:"
+#  PARAMETER stop "GPT4 Correct User:"
+#  PARAMETER stop "GPT4 Correct Assistant"
+
+#  PARAMETER temperature 0.9
+#  PARAMETER seed 0
+#  PARAMETER num_thread 8
+#  #PARAMETER repeat_last_n -1
+#  #PARAMETER num_predict -1
+#  #PARAMETER num_ctx 16384

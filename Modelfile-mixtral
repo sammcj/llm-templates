@@ -1,0 +1,41 @@
+#  ollama create nous-hermes-2-mixtral-8x7b-dpo.i1:q5_k_m -f modelfiles/Modelfile-mixtral
+
+
+FROM ../Nous-Hermes-2-Mixtral-8x7B-DPO.i1-Q5_K_M.gguf
+
+# Note: This model supports a 32K context window, but defaulting to less here for sane default performance
+#  PARAMETER num_ctx 4096
+
+TEMPLATE """[INST] {{ .System }} {{ .Prompt }} [/INST]"""
+PARAMETER stop [INST]
+PARAMETER stop [/INST]
+
+
+### Tuning ##
+
+# VRAM increased by:
+# num_batch
+# num_ctx
+# $OLLAMA_NUM_PARALLEL (which seems like it doubles the num_ctx?)
+
+# Default is 512 in Ollama, higher means more memory usage but faster if it can fit in VRAM
+#  PARAMETER num_batch 512
+#  PARAMETER num_batch 1024
+#  PARAMETER num_ctx 8192
+#  PARAMETER num_ctx 24572
+#  PARAMETER num_ctx 16384
+PARAMETER num_ctx 15000
+
+## For codegen ##
+#  PARAMETER num_keep 512
+PARAMETER num_keep 24
+
+PARAMETER temperature 0.4
+#  PARAMETER top_p 0.9
+#  PARAMETER top_p 0.8 # default
+#  PARAMETER top_k 20 # default
+#  PARAMETER repetition_penalty 1.05 # default
+
+PARAMETER presence_penalty 0.2
+PARAMETER frequency_penalty 0.2
+PARAMETER repeat_last_n 50

@@ -1,0 +1,43 @@
+#  ollama create internlm2_5-20b-chat:Q8_0 -f modelfiles/Modelfile-internlm2
+
+FROM ../internlm2_5-20b-chat-q8_0.gguf
+
+TEMPLATE """{{ if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+{{ end }}<|im_start|>assistant
+{{ .Response }}<|im_end|>"""
+
+#  PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+
+### Tuning ##
+#  PARAMETER num_batch 256
+#  PARAMETER num_batch 1024
+
+## For codegen ##
+PARAMETER num_ctx 32768
+
+PARAMETER temperature 0.3
+#  PARAMETER num_keep 512
+#  PARAMETER top_p 0.9
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+
+#  SYSTEM """
+#  You are an expert software engineer proficient in multiple programming languages. Your task is to generate, complete, and refactor code snippets based on the given instructions. Provide clean, efficient, and well-commented code.
+
+#  Remember:
+#  - Follow best practices and the latest conventions.
+#  - Use the most current libraries, functions, and best practices. Avoid deprecated methods and outdated conventions.
+#  - Ensure the code is easy to understand and maintain.
+#  - Prefer British English spelling.
+#  - Output the filename and line number when providing code snippets if you know them.
+#  - When updating functions output the entire updated function.
+#  - Think carefully about what the user is requesting and the provided context of our chat and code.
+
+#  Avoid explanations unless explicitly prompted. Be concise and focus on the task.
+#  """

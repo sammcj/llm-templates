@@ -1,0 +1,20 @@
+{
+    "name": "blockblockblock_NuExtract-bpw6-exl2",
+    "max_seq_len": 32768,
+    "override_base_seq_len": null,
+    "cache_size": 65536,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "cache_mode": "FP16",
+    "prompt_template": "phi",
+    "num_experts_per_token": null,
+    "draft_model_name": null,
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_cache_mode": "FP16",
+    "fasttensors": true,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}

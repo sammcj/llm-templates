@@ -1,0 +1,22 @@
+# ollama create llama3-llava-next-8b:q8_0 -f Modelfile-llava
+# ollama create meta-llama-3-70b-instruct-dpo-maziyarpanahi:q4_k_m -f Modelfile-llama3
+# ollama push meta-llama-3-70b-instruct-dpo-maziyarpanahi:q4_k_m
+
+FROM ./llama3-llava-next-8b-Q8_0.gguf
+
+#  Note: llama.cpp automatically prepends <|begin_of_text|>, so it shouldn't be duplicated here.
+TEMPLATE """{{ if .System }}<|start_header_id|>system<|end_header_id|>
+
+{{ .System }}<|eot_id|>{{ end }}{{ if .Prompt }}<|start_header_id|>user<|end_header_id|>
+
+{{ .Prompt }}<|eot_id|>{{ end }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ .Response }}<|eot_id|>"""
+
+#  PARAMETER num_keep 24
+#  PARAMETER temperature 0.01
+#  PARAMETER num_ctx 8192
+
+PARAMETER stop "<|start_header_id|>"
+PARAMETER stop "<|end_header_id|>"
+PARAMETER stop "<|eot_id|>"

@@ -1,0 +1,177 @@
+
+# ollama create codestral-tuned-22b-maziyarpanahi:q6_k -f modelfiles/Modelfile-codestral
+# ollama push codestral-tuned-22b-maziyarpanahi:q5_k_m
+
+# ollama create codestral-22b_ef16:q6_k -f modelfiles/Modelfile-codestral
+
+FROM ../mistralai_Codestral-22B-v0.1.ef16.q6_k.gguf
+#  FROM ../Codestral-22B-v0.1.Q5_K_M.gguf
+
+TEMPLATE """{{- if .Suffix }}[SUFFIX]{{ .Suffix }}[PREFIX] {{ .Prompt }}
+{{- else if .Messages }}
+{{- range $index, $_ := .Messages }}
+{{- if eq .Role "user" }}[INST] {{ if and $.System (eq (len (slice $.Messages $index)) 1) }}{{ $.System }}
+
+{{ end }}{{ .Content }}[/INST]
+{{- else if eq .Role "assistant" }} {{ .Content }}</s>
+{{- end }}
+{{- end }}
+{{- else }}[INST] {{ if .System }}{{ .System }}
+
+{{ end }}{{ .Prompt }} [/INST]
+{{- end }} {{ .Response }}
+{{- if .Response }}</s>
+{{- end }}"""
+
+PARAMETER stop "[INST]"
+PARAMETER stop "[/INST]"
+PARAMETER stop "[PREFIX]"
+PARAMETER stop "[MIDDLE]"
+PARAMETER stop "[SUFFIX]"
+
+### Tuning ##
+
+# Default is 512 in Ollama, higher means more memory usage but faster if it can fit in VRAM
+PARAMETER num_batch 1024
+####
+
+## For codegen ##
+# 34816 @Q6_K just fits in my 40GB VRAM
+PARAMETER num_ctx 32768
+PARAMETER num_keep 384
+PARAMETER temperature 0.2
+PARAMETER top_p 0.9
+PARAMETER presence_penalty 0.2
+PARAMETER frequency_penalty 0.2
+PARAMETER repeat_last_n 50
+
+SYSTEM """
+You are an expert software engineer.
+
+- Follow best practices and the latest conventions and libraries functions, avoiding deprecated methods and outdated conventions.
+- Prefer British English spelling.
+- When updating functions output the entire updated function.
+- Avoid explanations unless explicitly prompted. Be concise and focus on the task.
+- Think carefully about what the user is requesting and take into account the entire provided context of our chat and code.
+
+IMPORTANT: Make sure you complete the task in full including all requirements and functionalities.
+"""
+
+####
+
+
+#### Code Generation ####
+
+#  When generating code, you typically want to balance coherence, accuracy, and creativity. Here are some recommended settings:
+
+#  ### 1. **Focused and Accurate Code Generation**:
+
+#  • **top_p**: 0.8 (focus on higher probability tokens)
+#  • **temperature**: 0.2 (low randomness)
+#  • **num_predict**: 50-100 (depending on the desired length of code)
+#  • **presence_penalty**: 0.1
+#  • **frequency_penalty**: 0.1
+
+#  This combination promotes focused and precise code generation, minimising randomness while maintaining some flexibility to ensure correct syntax and logical flow.
+
+#  ### 2. **Balanced Approach**:
+
+#  • **top_p**: 0.9
+#  • **temperature**: 0.4
+#  • **num_predict**: 50-100
+#  • **presence_penalty**: 0.2
+#  • **frequency_penalty**: 0.2
+
+#  This set of parameters strikes a balance between creativity and coherence, useful for more complex code snippets requiring some level of creativity while still adhering to programming conventions.
+
+#  ### 3. **Creative Code Generation**:
+
+#  • **top_p**: 0.95
+#  • **temperature**: 0.7
+#  • **num_predict**: 100-150
+#  • **presence_penalty**: 0.3
+#  • **frequency_penalty**: 0.3
+
+#  Higher values for top_p and temperature increase the model's creativity, which can be useful for generating innovative solutions or exploring multiple coding approaches.
+#  Do not adjust top_p and top_k at the same time, as they are both used for truncating the output distribution. If you adjust both, it may lead to unexpected results.
+
+
+# ## Ollama Defaults
+#  As of 2024-06-01
+
+#  NumKeep:          4       # num_keep
+#  Temperature:      0.8     # temperature
+#  TopK:             40      # top_k
+#  TopP:             0.9     # top_p
+#  TFSZ:             1.0     # tfs_z
+#  TypicalP:         1.0     # typical_p
+#  RepeatLastN:      64      # repeat_last_n
+#  RepeatPenalty:    1.1     # repeat_penalty
+#  PresencePenalty:  0.0     # presence_penalty
+#  FrequencyPenalty: 0.0     # frequency_penalty
+#  Mirostat:         0       # mirostat
+#  MirostatTau:      5.0     # mirostat_tau
+#  MirostatEta:      0.1     # mirostat_eta
+#  PenalizeNewline:  true    # penalize_newline
+#  Seed:             -1      # seed
+#  NumCtx:           2048    # num_ctx
+#  NumBatch:         512     # num_batch
+#  LowVRAM:          false   # low_vram
+#  F16KV:            true    # f16kv
+#  UseMLock:         false   # use_mlock
+#  UseMMap:          true    # use_mmap
+#  UseNUMA:          false   # use_numa
+
+
+### Current Default Settings Evaluation
+
+#  - **NumKeep: 4**
+#    - This is a low value, meaning the model retains only a small part of the context from the prompt. For complex code refactoring or continuation tasks, increasing this might help maintain better context.
+
+#  - **Temperature: 0.8**
+#    - This setting is quite high for code generation. Lowering it (e.g., to 0.4-0.6) could produce more deterministic and accurate code outputs.
+
+#  - **TopK: 40**
+#    - This is a reasonable setting. For highly deterministic code generation, you might consider lowering it slightly (e.g., 20-30).
+
+#  - **TopP: 0.9**
+#    - This is a good setting for balancing diversity and coherence. It allows for a decent range of token selection without being too unpredictable.
+
+#  - **TFSZ: 1.0**
+#    - This value is high and might allow for less frequent tokens. Lowering it (e.g., 0.5-0.7) can help focus the generation more.
+
+#  - **TypicalP: 1.0**
+#    - This effectively disables typical sampling. For more consistent code generation, a value around 0.7-0.9 could be beneficial.
+
+#  - **RepeatLastN: 64**
+#    - This is quite high. For code tasks, especially where structure and repetition are essential, reducing it (e.g., 20-40) could prevent excessive penalising of necessary repetitions.
+
+#  - **RepeatPenalty: 1.1**
+#    - This is a reasonable setting. It provides a mild penalty to reduce redundancy.
+
+#  - **PresencePenalty: 0.0**
+#    - No penalty for the presence of tokens. Introducing a small penalty (e.g., 0.1-0.2) might encourage more diverse outputs, useful for refactoring tasks.
+
+#  - **FrequencyPenalty: 0.0**
+#    - No penalty for frequency. Similar to the presence penalty, a small value (e.g., 0.1-0.2) could help reduce repeated structures.
+
+#  - **Mirostat: 0**
+#    - Mirostat is disabled. This is fine for straightforward generation tasks. If you want to experiment with dynamic temperature adjustments, enabling it might be useful.
+
+#  - **MirostatTau: 5.0, MirostatEta: 0.1**
+#    - These are settings for Mirostat, which is currently disabled. If enabling Mirostat, these values seem conservative and reasonable.
+
+#  - **PenalizeNewline: true**
+#    - Penalising newlines can help in keeping the code concise. This setting makes sense for avoiding excessive line breaks.
+
+#  - **Seed: -1**
+#    - Using a random seed. For reproducibility, setting a specific seed can be helpful.
+
+#  - **NumCtx: 2048**
+#    - A high context window, which is beneficial for maintaining long-term context in code generation and refactoring.
+
+#  - **NumBatch: 512**
+#    - This is quite high and assumes ample VRAM availability. Adjust based on your hardware capabilities.
+
+#  - **LowVRAM: false, F16KV: true, UseMLock: false, UseMMap: true, UseNUMA: false**
+#    - These settings are geared towards performance optimisation without excessive memory constraints. They are generally suitable unless you face specific hardware limitations.
