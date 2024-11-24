@@ -1,8 +1,7 @@
 {
     "name": "bartowski_Qwen2.5-Coder-32B-Instruct-exl2",
-    "max_seq_len": 65536,
-    "override_base_seq_len": null,
-    "cache_size": 131072,
+    "max_seq_len": 32768,
+    "cache_size": 65536,
     "gpu_split_auto": true,
     "gpu_split": "",
     "rope_scale": null,
@@ -17,6 +16,7 @@
     "draft_rope_alpha_auto": true,
     "draft_cache_mode": "Q4",
     "tensor_parallel": true,
-    "autosplit_reserve": "",
+    "vision": false,
+    "autosplit_reserve": "256",
     "chunk_size": null
 }

@@ -1,3 +1,6 @@
+{# Metadata #}
+{%- set stop_strings = ["<|im_start|>", "<|im_end|>", "<|endoftext|>"] -%}
+
 {% if messages[0]['role'] == 'system' %}
     {% set loop_messages = messages[1:] %}
     {% set system_message = messages[0]['content'].strip() + '<|end_of_turn|>' %}
