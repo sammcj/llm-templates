@@ -1,7 +1,6 @@
 {
     "name": "LoneStriker_Qwen2.5-32B-Instruct-6.0bpw-h6-exl2",
     "max_seq_len": 65536,
-    "override_base_seq_len": null,
     "cache_size": 131072,
     "gpu_split_auto": true,
     "gpu_split": "",
@@ -17,6 +16,7 @@
     "draft_rope_alpha_auto": true,
     "draft_cache_mode": "Q4",
     "tensor_parallel": true,
+    "vision": false,
     "autosplit_reserve": "",
     "chunk_size": null
 }

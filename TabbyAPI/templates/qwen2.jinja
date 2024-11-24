@@ -1,5 +1,6 @@
 {# Metadata #}
-{%- set stop_strings = ["<|im_start|>", "<|im_end|>", "<|endoftext|>"] -%}
+{%- set stop_strings = ["<|im_start|>", "<|im_end|>", "<|endoftext|>", "<|end_of_turn|>"] -%}
+
 
 {% if messages[0]['role'] == 'system' %}
     {% set loop_messages = messages[1:] %}

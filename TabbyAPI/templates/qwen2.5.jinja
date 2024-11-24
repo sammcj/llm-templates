@@ -1,5 +1,6 @@
 {# Metadata #}
-{%- set stop_strings = ["<|im_start|>", "<|im_end|>", "<|endoftext|>"] -%}
+{%- set stop_strings = ["<|im_start|>", "<|im_end|>", "<|endoftext|>", "<|end_of_turn|>"] -%}
+
 
 {%-  if tools  %}
     {{-  '<|im_start|>system
