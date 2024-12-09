@@ -1,18 +1,8 @@
 
-#  ollama create qwen2.5-coder-3b-instruct-128k:q6_k -f modelfiles/Modelfile-qwen2.5-coder
-#  ollama create qwen2.5-coder-7b-instruct-128k:q6_k -f modelfiles/Modelfile-qwen2.5-coder
-#  ollama create qwen2.5-coder-14b-instruct-128k:q6_k -f modelfiles/Modelfile-qwen2.5-coder
-#  ollama create qwen2.5-coder-32b-instruct-128k:q6_k -f modelfiles/Modelfile-qwen2.5-coder
-#  ollama create qwen2.5-coder-32b-instruct-128k:q5_k_m -f modelfiles/Modelfile-qwen2.5-coder
-
-#  FROM ../Qwen2.5-Coder-14B-Instruct-128k-Q6_K.gguf
-#  FROM ../Qwen2.5-Coder-32B-Instruct-128k-Q6_K.gguf
-#  FROM ../Qwen2.5-Coder-7B-Instruct-128k-Q6_K.gguf
-FROM ../Qwen2.5-Coder-32B-Instruct-Q5_K_M.gguf
+#  ollama create qwq-32b-preview:q6_k -f modelfiles/Modelfile-qwq
+FROM ../QwQ-32B-Preview-Q6_K.gguf
 
 TEMPLATE """
-{{- if .Suffix }}<|fim_prefix|>{{ .Prompt }}<|fim_suffix|>{{ .Suffix }}<|fim_middle|>
-{{- else if .Messages }}
 {{- if or .System .Tools }}<|im_start|>system
 {{- if .System }}
 {{ .System }}
@@ -55,16 +45,12 @@ For each function call, return a json object with function name and arguments wi
 {{- if and (ne .Role "assistant") $last }}<|im_start|>assistant
 {{ end }}
 {{- end }}
-{{- else }}
-{{- if .System }}<|im_start|>system
-{{ .System }}<|im_end|>
-{{ end }}{{ if .Prompt }}<|im_start|>user
-{{ .Prompt }}<|im_end|>
-{{ end }}<|im_start|>assistant
-{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}
 """
 
-PARAMETER stop "<|endoftext|>"
+SYSTEM """You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step."""
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
 
 ### Tuning ##
 PARAMETER num_ctx 32768
@@ -79,7 +65,7 @@ PARAMETER min_p 0.9
 ### min_p sampling ##
 
 #  Taken from the official Qwen HF repo config
-PARAMETER repeat_penalty 1.05
+#  PARAMETER repeat_penalty 1.05
 #  top_p 0.8
 #  top_k 20
 #  temperature 0.7
@@ -89,8 +75,3 @@ PARAMETER repeat_penalty 1.05
 #  PARAMETER presence_penalty 0.2
 #  PARAMETER frequency_penalty 0.2
 #  PARAMETER repeat_last_n 50
-
-SYSTEM """
-You are Qwen, created by Alibaba Cloud. You are a helpful assistant.
-You are an expert programmer. You always follow best practices and the latest coding conventions. You use the latest packages/libraries and avoid using deprecated functionality. Ensure all code is 100% complete and meets the users request in full. If the problem is complex you break it down step by step or use Monte Carlo tree search to engineer the best solution. Always use British English spelling for written text. Provide clear and concise technical responses.
-"""
