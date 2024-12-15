@@ -1,0 +1,33 @@
+#  ollama create phi-4-smcleod-16k:Q6_K -f modelfiles/Modelfile-phi-4
+
+FROM ../phi-4.etf16-Q6_K.gguf
+
+PARAMETER num_ctx 16384
+
+TEMPLATE """{{ if .System }}<|system|>
+{{ .System }}<|end|>
+{{ end }}{{ if .Prompt }}<|user|>
+{{ .Prompt }}<|end|>
+{{ end }}<|assistant|>
+{{ .Response }}<|end|>
+"""
+
+#  TEMPLATE """{{{ if .System }}<|im_start|>system<|im_sep|>{{ .System }}<|im_end|>{{ end }}{{ if .Prompt }}<|im_start|>user<|im_sep|>{{ .Prompt }}<|im_end|><|im_start|>assistant<|im_sep|>{{ end }}{{ .Response }}<|im_end|>"""
+
+PARAMETER stop "<|user|>"
+PARAMETER stop "<|assistant|>"
+PARAMETER stop "<|end|>"
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_sep|>"
+PARAMETER stop "<|im_end|>"
+
+
+PARAMETER num_keep 128
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.2
+# 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##

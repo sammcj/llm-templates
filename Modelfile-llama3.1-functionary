@@ -1,0 +1,72 @@
+#  ollama create sammcj/functionary-small-v3.2:q6_k -f modelfiles/Modelfile-llama3.1-functionary
+
+FROM ../functionary-small-v3.2-q6_k.gguf
+
+#  Modified llama 3.1 template based on https://github.com/MeetKai/functionary/blob/main/functionary/prompt_template/llama31_prompt_template.py
+TEMPLATE """{{- if or .System .Tools }}<|start_header_id|>system<|end_header_id|>
+{{- if .System }}
+
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+
+When you receive a tool call response, use the output to format an answer to the original user question.
+
+You are a helpful assistant with tool calling capabilities. You call functions using the format <function=name>arguments</function>
+
+Available functions:
+{{- range $.Tools }}
+{{- . }}
+{{ end }}
+{{- end }}<|eot_id|>
+{{- end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<|start_header_id|>user<|end_header_id|>
+
+{{ .Content }}<|eot_id|>{{ if $last }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ end }}
+{{- else if eq .Role "assistant" }}<|start_header_id|>assistant<|end_header_id|>
+{{- if .ToolCalls }}
+{{- range .ToolCalls }}
+<function={{ .Function.Name }}>{{ .Function.Arguments }}</function>
+{{- end }}
+{{- else }}
+
+{{ .Content }}
+{{- end }}{{ if not $last }}<|eot_id|>{{ end }}
+{{- else if eq .Role "tool" }}
+<|python_tag|>{{ .Content }}<|eot_id|>{{ if $last }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ end }}
+{{- end }}
+{{- end }}"""
+
+PARAMETER stop "<|start_header_id|>"
+PARAMETER stop "<|end_header_id|>"
+PARAMETER stop "<|eot_id|>"
+PARAMETER stop "<|end_of_text|>"
+PARAMETER stop "<|eom_id|>"
+PARAMETER stop "<|reserved_special_token"
+
+
+# 8k is small but hopefully the function calls are small as well.
+PARAMETER num_ctx 8192
+
+## For codegen ##
+#  PARAMETER temperature 0.3
+#  PARAMETER top_p 0.8
+
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.2
+# 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##

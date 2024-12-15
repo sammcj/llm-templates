@@ -1,0 +1,23 @@
+# ollama create c4ai-command-r7b-12-2024:Q5_K_M -f modelfiles/Modelfile-cmdr-r7b
+
+#  FROM ../c4ai-command-r-plus-08-2024-IQ3_M.gguf
+
+FROM technobyte/c4ai-command-r7b-12-2024:q5_k_M
+
+#  FROM /root/.ollama/models/blobs/sha256-7bf475810fc858eef666a69d12f691bee6ddca9d6a1d565aeca3d79a7b51f4bb
+
+TEMPLATE """{{ if .System }}<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>{{ .System }}<|END_OF_TURN_TOKEN|>{{ end }}{{ if .Prompt }}<|START_OF_TURN_TOKEN|><|USER_TOKEN|>{{ .Prompt }}<|END_OF_TURN_TOKEN|>{{ end }}<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|><|START_RESPONSE|>{{ .Response }}<|END_RESPONSE|><|END_OF_TURN_TOKEN|>"""
+
+PARAMETER stop <|END_RESPONSE|>
+PARAMETER stop <|START_OF_TURN_TOKEN|>
+PARAMETER stop <|END_OF_TURN_TOKEN|>
+
+
+PARAMETER num_ctx 16384
+
+## Min p sampling
+# 1.0 disables top_p, so we can use min_p, min_p needs some temperature to work
+PARAMETER temperature 0.2
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+##

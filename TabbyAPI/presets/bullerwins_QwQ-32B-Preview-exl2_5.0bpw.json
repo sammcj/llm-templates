@@ -1,0 +1,22 @@
+{
+    "name": "bullerwins_QwQ-32B-Preview-exl2_5.0bpw",
+    "max_seq_len": 32768,
+    "cache_size": 65536,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": 1,
+    "model_rope_alpha_auto": true,
+    "cache_mode": "Q4",
+    "prompt_template": "qwen2.5-toolcalling-experimental",
+    "num_experts_per_token": null,
+    "draft_model_name": "async0x42_Qwen2.5-Coder-0.5B-Instruct-exl2_4.0bpw",
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_rope_alpha_auto": true,
+    "draft_cache_mode": "Q4",
+    "tensor_parallel": true,
+    "vision": false,
+    "autosplit_reserve": "256",
+    "chunk_size": null
+}
