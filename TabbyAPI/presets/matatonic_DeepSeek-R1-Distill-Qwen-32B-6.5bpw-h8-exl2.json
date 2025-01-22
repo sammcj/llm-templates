@@ -1,0 +1,22 @@
+{
+    "name": "matatonic_DeepSeek-R1-Distill-Qwen-32B-6.5bpw-h8-exl2",
+    "max_seq_len": 32768,
+    "cache_size": 65536,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "model_rope_alpha_auto": true,
+    "cache_mode": "Q4",
+    "prompt_template": null,
+    "num_experts_per_token": null,
+    "draft_model_name": "matatonic_DeepSeek-R1-Distill-Qwen-1.5B-5.0bpw-exl2",
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_rope_alpha_auto": true,
+    "draft_cache_mode": "Q4",
+    "tensor_parallel": true,
+    "vision": false,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}
