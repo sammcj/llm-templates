@@ -1,9 +1,9 @@
 
-# ollama create calme-3.2-qwen-32b:iq3_xxs -f modelfiles/Modelfile-qwen2.5
+# ollama create dracarys2-72b-instruct_q6_k:q6_k -f modelfiles/Modelfile-qwen2.5
 
-#  FROM ../Dracarys2-72B-Instruct_Q4_K_M.gguf
-FROM hf.co/mradermacher/Rombos-LLM-V2.5-Qwen-32b-i1-GGUF:Q6_K
-#  FROM ../calme-3.2-instruct-78b-IQ3_XXS.gguf
+#  FROM hf.co/mradermacher/Rombos-LLM-V2.5-Qwen-32b-i1-GGUF:Q6_K
+
+FROM ../Dracarys2-72B-Instruct_Q6_K.gguf
 
 TEMPLATE """
 {{- if .Messages }}
@@ -60,7 +60,8 @@ For each function call, return a json object with function name and arguments wi
 
 ### Tuning ##
 
-PARAMETER num_ctx 32768
+PARAMETER num_ctx 65536
+PARAMETER num_keep 256
 
 ### min_p sampling ##
 # min_p works best with a bit of temperature
@@ -70,8 +71,8 @@ PARAMETER top_p 1.0
 PARAMETER min_p 0.9
 ### min_p sampling ##
 
-#  PARAMETER num_batch 1024
-#  PARAMETER num_keep 256
+# MOAR SPEEEED
+PARAMETER num_batch 1024
 
 #  64 fits RYS-XLarge-72b IQ4_XS at 21k
 #  PARAMETER num_batch 64

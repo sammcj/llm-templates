@@ -1,43 +1,71 @@
-#  ollama create deepseek-r1:14b-qwen-distill-q6_k -f modelfiles/Modelfile-deepseek-r1
-#  ollama create deepseek-r1:7b-qwen-distill-q6_k_l -f modelfiles/Modelfile-deepseek-r1
-#  ollama create deepseek-r1:70b-llama-distill-q3_k_l -f modelfiles/Modelfile-deepseek-r1
+#  ollama create deepseek-r1:IQ4_XS -f Modelfile
 
-#  FROM ../DeepSeek-R1-Distill-Qwen-14B-Q6_K.gguf
-FROM ../deepseek-r1-distill-llama-70b-q3_k_l.gguf
+#  FROM ./DeepSeek-R1-IQ3_XXS.gguf
+FROM /root/.ollama/models/blobs/sha256-6150cb382311b69f09cc0f9a1b69fc029cbd742b66bb8ec531aa5ecf5c613e93
 
-TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
-{{- range $i, $_ := .Messages }}
-{{- $last := eq (len (slice $.Messages $i)) 1}}
-{{- if eq .Role "user" }}<｜User｜>{{ .Content }}
-{{- else if eq .Role "assistant" }}<｜Assistant｜>{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
-{{- end }}
-{{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
-{{- end }}"""
+# Note this will use a lot of vRAM as deepseek v3 architecture doesn't support flash attention/qkv
+PARAMETER num_ctx 32768
+#  PARAMETER num_batch 512
 
-#  SYSTEM """
-#  """
+### SAMPLING ###
+
+## min_p sampling (comment out temp and top_p above if using)
+### min_p sampling ##
+# min_p works best with a bit of temperature
+#  PARAMETER temperature 0.2
+#  #  # 1.0 disables top_p, so we can use min_p
+#  PARAMETER top_p 1.0
+#  PARAMETER min_p 0.9
+### min_p sampling ##
+
+
+# basic sampling
+PARAMETER temperature 0.1
+PARAMETER top_p 0.8
 
 PARAMETER stop "<｜begin▁of▁sentence｜>"
 PARAMETER stop "<｜end▁of▁sentence｜>"
 PARAMETER stop "<｜User｜>"
 PARAMETER stop "<｜Assistant｜>"
 
-### Tuning ##
-#  PARAMETER num_batch 1024
-PARAMETER num_ctx 8192
+### TEMPLATES ###
 
-### min_p sampling ##
-# min_p works best with a bit of temperature
-PARAMETER temperature 0.2
-#  # 1.0 disables top_p, so we can use min_p
-PARAMETER top_p 1.0
-PARAMETER min_p 0.9
-### min_p sampling ##
+# Experimental DeepSeek R1 template with added toolcalling
 
-#  PARAMETER num_keep 256
-#  PARAMETER top_p 0.90
-#  PARAMETER top_k 40
-#  PARAMETER presence_penalty 0.2
-#  PARAMETER frequency_penalty 0.2
-#  PARAMETER repeat_last_n 50
-
+TEMPLATE """
+{{- if .Messages }}
+{{- if or .System .Tools }}
+{{- if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+Available tools:
+{{ .Tools }}
+{{- end }}
+{{- end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<｜User｜>
+{{ .Content }}
+{{- if $last }}<｜Assistant｜>{{ end }}
+{{- else if eq .Role "assistant" }}<｜Assistant｜>
+{{ .Content }}
+{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
+{{- else if eq .Role "tool" }}
+{{ .Content }}
+{{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
+{{- end }}
+{{- end }}
+{{- else }}
+{{- if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Prompt }}
+<｜User｜>
+{{ .Prompt }}
+{{- end }}
+<｜Assistant｜>
+{{ .Response }}
+{{- if .Response }}{{ end }}
+{{- end }}
+"""

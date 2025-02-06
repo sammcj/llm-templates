@@ -1,0 +1,45 @@
+#  ollama create fuseo1-deekseekr1-qwq-skyt1-32b-preview:q6_k -f modelfiles/Modelfile-fuse01
+
+
+FROM ../FuseO1-DeekSeekR1-QwQ-SkyT1-32B-Preview-Q6_K.gguf
+
+TEMPLATE """{{ if .System }}[system message]
+{{ .System }}{{ end }}
+
+{{ if .Prompt }}[user message]
+{{ .Prompt }}{{ end }}
+
+[assistant response]
+{{ .Response }}"""
+
+#  SYSTEM """
+#  """
+
+#  PARAMETER stop "<｜begin▁of▁sentence｜>"
+PARAMETER stop "<｜end▁of▁sentence｜>"
+#  PARAMETER stop "<｜User｜>"
+#  PARAMETER stop "<｜Assistant｜>"
+
+### Tuning ##
+#  PARAMETER num_batch 1024
+#  PARAMETER num_ctx 8192
+
+# CHUNGUS TUNING
+#  PARAMETER num_batch 64
+#  PARAMETER num_ctx 2048
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.2
+#  # 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##
+
+#  PARAMETER num_keep 256
+#  PARAMETER top_p 0.90
+#  PARAMETER top_k 40
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
