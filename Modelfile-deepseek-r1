@@ -28,44 +28,70 @@ PARAMETER stop "<｜end▁of▁sentence｜>"
 PARAMETER stop "<｜User｜>"
 PARAMETER stop "<｜Assistant｜>"
 
+# Experimental for Deepseek's official tool calling template below
+PARAMETER stop "<｜tool▁output▁begin｜>"
+PARAMETER stop "<｜tool▁output▁end｜>"
+PARAMETER stop "<｜tool▁calls▁begin｜>"
+PARAMETER stop "<｜tool▁calls▁end｜>"
+PARAMETER stop "<｜tool▁sep｜>"
+
 ### TEMPLATES ###
 
-# Experimental DeepSeek R1 template with added toolcalling
-
-TEMPLATE """
-{{- if .Messages }}
-{{- if or .System .Tools }}
-{{- if .System }}
-{{ .System }}
-{{- end }}
-{{- if .Tools }}
-Available tools:
-{{ .Tools }}
-{{- end }}
-{{- end }}
+TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
 {{- range $i, $_ := .Messages }}
-{{- $last := eq (len (slice $.Messages $i)) 1 }}
-{{- if eq .Role "user" }}<｜User｜>
-{{ .Content }}
-{{- if $last }}<｜Assistant｜>{{ end }}
-{{- else if eq .Role "assistant" }}<｜Assistant｜>
-{{ .Content }}
-{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
-{{- else if eq .Role "tool" }}
-{{ .Content }}
+{{- $last := eq (len (slice $.Messages $i)) 1}}
+{{- if eq .Role "user" }}<｜User｜>{{ .Content }}
+{{- else if eq .Role "assistant" }}
+{{- if .Content }}<｜Assistant｜>{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
+{{- else if .ToolCalls }}<｜Assistant｜><｜tool▁calls▁begin｜>
+{{- range $j, $tool := .ToolCalls }}<｜tool▁call▁begin｜>{{ $tool.Type }}<｜tool▁sep｜>{{ $tool.Function.Name }}
+```json
+{{ $tool.Function.Arguments }}
+```<｜tool▁call▁end｜>{{- end }}<｜tool▁calls▁end｜><｜end▁of▁sentence｜>
+{{- end }}
+{{- else if eq .Role "tool" }}{{- if eq $i 0 }}<｜tool▁outputs▁begin｜>{{- end }}<｜tool▁output▁begin｜>{{ .Content }}<｜tool▁output▁end｜>
+{{- if $last }}<｜tool▁outputs▁end｜>{{- end }}
+{{- end }}
 {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
-{{- end }}
-{{- end }}
-{{- else }}
-{{- if .System }}
-{{ .System }}
-{{- end }}
-{{- if .Prompt }}
-<｜User｜>
-{{ .Prompt }}
-{{- end }}
-<｜Assistant｜>
-{{ .Response }}
-{{- if .Response }}{{ end }}
-{{- end }}
-"""
+{{- end }}"""
+
+# Experimental DeepSeek R1 template with added toolcalling (prior to deepseek updating their template):
+#
+#  TEMPLATE """
+#  {{- if .Messages }}
+#  {{- if or .System .Tools }}
+#  {{- if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Tools }}
+#  Available tools:
+#  {{ .Tools }}
+#  {{- end }}
+#  {{- end }}
+#  {{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1 }}
+#  {{- if eq .Role "user" }}<｜User｜>
+#  {{ .Content }}
+#  {{- if $last }}<｜Assistant｜>{{ end }}
+#  {{- else if eq .Role "assistant" }}<｜Assistant｜>
+#  {{ .Content }}
+#  {{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
+#  {{- else if eq .Role "tool" }}
+#  {{ .Content }}
+#  {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
+#  {{- end }}
+#  {{- end }}
+#  {{- else }}
+#  {{- if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Prompt }}
+#  <｜User｜>
+#  {{ .Prompt }}
+#  {{- end }}
+#  <｜Assistant｜>
+#  {{ .Response }}
+#  {{- if .Response }}{{ end }}
+#  {{- end }}
+#  """
+

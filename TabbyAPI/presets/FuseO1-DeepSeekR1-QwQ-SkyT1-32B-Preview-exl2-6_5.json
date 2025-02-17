@@ -1,0 +1,22 @@
+{
+    "name": "FuseO1-DeepSeekR1-QwQ-SkyT1-32B-Preview-exl2-6_5",
+    "max_seq_len": 32768,
+    "cache_size": 65536,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "model_rope_alpha_auto": true,
+    "cache_mode": "Q4",
+    "prompt_template": null,
+    "num_experts_per_token": null,
+    "draft_model_name": null,
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_rope_alpha_auto": true,
+    "draft_cache_mode": "FP16",
+    "tensor_parallel": true,
+    "vision": false,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}

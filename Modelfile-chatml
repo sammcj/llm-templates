@@ -1,6 +1,8 @@
-#  ollama create calme-2.3-rys-78b:IQ3_M -f modelfiles/Modelfile-chatml
+#  ollama create dolphin3.0-r1-mistral-24b:q6_k_l -f modelfiles/Modelfile-chatml
 
-FROM ../calme-2.3-rys-78b-IQ3_M.gguf
+FROM ../Dolphin3.0-R1-Mistral-24B-Q6_K_L.gguf
+
+SYSTEM """You are Dolphin, a helpful assistant with especially strong colding and reasoning skills. Ensure you complete the users requests in full."""
 
 TEMPLATE """
 {{ if .System }}<|im_start|>system
@@ -10,6 +12,18 @@ TEMPLATE """
 {{ end }}<|im_start|>assistant
 {{ .Response }}<|im_end|>
 """
+
+
+#  TEMPLATE """{{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1 -}}
+#  <|im_start|>{{ .Role }}
+#  {{ .Content }}{{ if not $last }}<|im_end|>
+#  {{ end }}
+#  {{- if and (ne .Role "assistant") $last }}<|im_end|>
+#  <|im_start|>assistant
+#  {{ end }}
+#  {{- end }}"""
+
 
 PARAMETER stop "<|im_start|>"
 PARAMETER stop "<|im_end|>"
