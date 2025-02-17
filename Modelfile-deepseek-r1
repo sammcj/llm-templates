@@ -20,7 +20,7 @@ PARAMETER num_ctx 32768
 
 
 # basic sampling
-PARAMETER temperature 0.1
+PARAMETER temperature 0.4
 PARAMETER top_p 0.8
 
 PARAMETER stop "<｜begin▁of▁sentence｜>"
