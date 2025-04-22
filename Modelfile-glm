@@ -1,0 +1,45 @@
+
+#  ollama create glm-4-32b-0414:q6_k -f modelfiles/Modelfile-glm
+#  ollama create glm-4-32b-0414:q5_k_m -f modelfiles/Modelfile-glm
+#  ollama create glm-z1-32b-0414:q6_k -f modelfiles/Modelfile-glm
+#  ollama create glm-z1-32b-0414:q5_k_m -f modelfiles/Modelfile-glm
+
+#  FROM ../GLM-4-32B-0414-F16-Q6_K.gguf
+# FROM ../GLM-Z1-32B-0414-Q5_K_M.gguf
+#  FROM ../GLM-4-32B-0414-F16-Q5_K_M.gguf
+FROM ../GLM-Z1-32B-0414-Q6_K.gguf
+
+TEMPLATE """[gMASK]<sop>{{ if .System }}<|system|>
+{{ .System }}{{ end }}{{ if .Prompt }}<|user|>
+{{ .Prompt }}{{ end }}<|assistant|>
+{{ .Response }}"""
+
+PARAMETER stop "<|system|>"
+PARAMETER stop "<|user|>"
+PARAMETER stop "<|assistant|>"
+
+### Tuning ##
+#  PARAMETER top_k 20
+PARAMETER top_p 0.8
+#  PARAMETER repeat_penalty 1.05
+
+PARAMETER num_ctx 32768
+PARAMETER num_keep 256
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+#  PARAMETER temperature 0.1
+#  # 1.0 disables top_p, so we can use min_p
+#  PARAMETER top_p 1.0
+#  PARAMETER min_p 0.9
+### min_p sampling ##
+
+#  top_p 0.8
+#  top_k 20
+#  temperature 0.7
+
+#  PARAMETER num_batch 1024
+#  PARAMETER num_keep 512
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50

@@ -1,27 +1,15 @@
-#  ollama create deepseek-r1:IQ4_XS -f Modelfile
+#  ollama create deepseek-v3-0324-ud:iq2_xxs -f Modelfile-deepseek-r1
 
 #  FROM ./DeepSeek-R1-IQ3_XXS.gguf
-FROM /root/.ollama/models/blobs/sha256-6150cb382311b69f09cc0f9a1b69fc029cbd742b66bb8ec531aa5ecf5c613e93
+FROM ../DeepSeek-V3-0324-UD-IQ2_XXS.gguf
 
 # Note this will use a lot of vRAM as deepseek v3 architecture doesn't support flash attention/qkv
-PARAMETER num_ctx 32768
-#  PARAMETER num_batch 512
-
-### SAMPLING ###
-
-## min_p sampling (comment out temp and top_p above if using)
-### min_p sampling ##
-# min_p works best with a bit of temperature
-#  PARAMETER temperature 0.2
-#  #  # 1.0 disables top_p, so we can use min_p
-#  PARAMETER top_p 1.0
-#  PARAMETER min_p 0.9
-### min_p sampling ##
-
+PARAMETER num_ctx 4096
+PARAMETER num_batch 32
 
 # basic sampling
-PARAMETER temperature 0.4
-PARAMETER top_p 0.8
+PARAMETER temperature 0.2
+PARAMETER top_p 0.85
 
 PARAMETER stop "<｜begin▁of▁sentence｜>"
 PARAMETER stop "<｜end▁of▁sentence｜>"
@@ -55,43 +43,13 @@ TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
 {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
 {{- end }}"""
 
-# Experimental DeepSeek R1 template with added toolcalling (prior to deepseek updating their template):
-#
-#  TEMPLATE """
-#  {{- if .Messages }}
-#  {{- if or .System .Tools }}
-#  {{- if .System }}
-#  {{ .System }}
-#  {{- end }}
-#  {{- if .Tools }}
-#  Available tools:
-#  {{ .Tools }}
-#  {{- end }}
-#  {{- end }}
-#  {{- range $i, $_ := .Messages }}
-#  {{- $last := eq (len (slice $.Messages $i)) 1 }}
-#  {{- if eq .Role "user" }}<｜User｜>
-#  {{ .Content }}
-#  {{- if $last }}<｜Assistant｜>{{ end }}
-#  {{- else if eq .Role "assistant" }}<｜Assistant｜>
-#  {{ .Content }}
-#  {{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
-#  {{- else if eq .Role "tool" }}
-#  {{ .Content }}
-#  {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
-#  {{- end }}
-#  {{- end }}
-#  {{- else }}
-#  {{- if .System }}
-#  {{ .System }}
-#  {{- end }}
-#  {{- if .Prompt }}
-#  <｜User｜>
-#  {{ .Prompt }}
-#  {{- end }}
-#  <｜Assistant｜>
-#  {{ .Response }}
-#  {{- if .Response }}{{ end }}
-#  {{- end }}
-#  """
+### SAMPLING ###
 
+## min_p sampling (comment out temp and top_p above if using)
+### min_p sampling ##
+# min_p works best with a bit of temperature
+#  PARAMETER temperature 0.2
+#  #  # 1.0 disables top_p, so we can use min_p
+#  PARAMETER top_p 1.0
+#  PARAMETER min_p 0.9
+### min_p sampling ##

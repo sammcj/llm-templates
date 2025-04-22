@@ -1,0 +1,231 @@
+# ollama create gemma-3-12b-it:q6_k -f modelfiles/Modelfile-gemma
+
+#  FROM ../gemma-3-12b-it-Q6_K.gguf
+
+# ollama create gemma-3-27b-it-goose:q6_k -f modelfiles/Modelfile-goose-toolshim
+FROM gemma-3-27b-it:q6_k
+
+#  #  Gemma Goose template:
+#  TEMPLATE """{{- if .System }}<start_of_turn>user
+#  {{ .System }}
+#  {{- if .Tools }}
+
+#  # Available Tools
+#  You have access to the following tools:
+#  {{- range .Tools }}
+#  {{ . }}
+#  {{- end }}
+
+#  # Tool Calling Format
+#  When you need to use a tool, you MUST format your response using this exact JSON format:
+#  ```json
+#  {
+#    "tool_calls": [
+#      {
+#        "name": "tool_name",
+#        "arguments": {
+#          "param1": "value1",
+#          "param2": "value2"
+#        }
+#      }
+#    ]
+#  }
+#  Always break down complex tasks into steps, using one tool at a time. After receiving a tool result, analyze it before proceeding.
+#  {{- end }}<end_of_turn>
+#  <start_of_turn>model
+#  I understand and will help you with your tasks, using tools when needed.
+#  <end_of_turn>
+#  {{- end }}
+#  {{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1 }}
+#  {{- if eq .Role "user" }}<start_of_turn>user
+#  {{ .Content }}<end_of_turn>
+#  {{ if $last }}<start_of_turn>model
+#  {{ end }}
+#  {{- else if eq .Role "assistant" }}<start_of_turn>model
+#  {{- if .ToolCalls }}
+#  jsonCopy{
+#    "tool_calls": [
+#      {{- range $index, $tool := .ToolCalls }}
+#      {{- if $index }},{{- end }}
+#      {
+#        "name": "{{ $tool.Function.Name }}",
+#        "arguments": {{ $tool.Function.Arguments }}
+#      }
+#      {{- end }}
+#    ]
+#  }
+#  {{- else }}
+#  {{ .Content }}
+#  {{- end }}{{ if not $last }}<end_of_turn>
+#  {{ end }}
+#  {{- else if eq .Role "tool" }}<start_of_turn>user
+#  Tool Response: {{ .Content }}<end_of_turn>
+#  {{ if $last }}<start_of_turn>model
+#  {{ end }}
+#  {{- end }}
+#  {{- end }}"""
+
+TEMPLATE """{{- if .System }}<start_of_turn>user
+{{ .System }}
+{{- if .Tools }}
+
+You can use these tools to help answer the user's question:
+{{- range .Tools }}
+{{ . }}
+{{- end }}
+
+# IMPORTANT: When performing a tool call, you must ONLY include the tool call in your response, you MUST not add ANY other text, prose or commentary!
+
+# Tool Calling Format
+When you need to use a tool, you MUST format your response using this exact JSON format:
+{
+  "tool_calls": [
+    {
+      "name": "tool_name",
+      "arguments": {
+        "param1": "value1",
+        "param2": "value2"
+      }
+    }
+  ]
+}
+
+{{- end }}<end_of_turn>
+<start_of_turn>model
+I understand.
+<end_of_turn>
+{{- end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<start_of_turn>user
+{{ .Content }}<end_of_turn>
+{{ if $last }}<start_of_turn>model
+{{ end }}
+{{- else if eq .Role "assistant" }}<start_of_turn>model
+{{- if .ToolCalls }}
+<tool>
+{{- range .ToolCalls }}
+jsonCopy{
+  "tool_calls": [
+    {{- range $index, $tool := .ToolCalls }}
+    {{- if $index }},{{- end }}
+    {
+      "name": "{{ $tool.Function.Name }}",
+      "arguments": {{ $tool.Function.Arguments }}
+    }
+    {{- end }}
+  ]
+}
+{{- end }}
+</tool>
+{{- else }}
+{{ .Content }}
+{{- end }}{{ if not $last }}<end_of_turn>
+{{ end }}
+{{- else if eq .Role "tool" }}<start_of_turn>user
+<tool_response>
+{{ .Content }}
+</tool_response><end_of_turn>
+{{ if $last }}<start_of_turn>model
+{{ end }}
+{{- end }}
+{{- end }}"""
+
+#  General Goose template:
+#  TEMPLATE """{{- if .System }}{{ .System }}
+
+#  {{- if .Tools }}
+#  # Available Tools
+#  You have access to the following tools:
+#  {{- range .Tools }}
+#  {{ . }}
+#  {{- end }}
+
+#  # Tool Calling Format
+#  When you need to use a tool, you MUST format your response using this exact JSON format:
+#  ```json
+#  {
+#    "tool_calls": [
+#      {
+#        "name": "tool_name",
+#        "arguments": {
+#          "param1": "value1",
+#          "param2": "value2"
+#        }
+#      }
+#    ]
+#  }
+#  Always break down complex tasks into smaller steps, using one tool at a time. After receiving a tool result, analyze it before proceeding to the next step.
+#  {{- end }}
+#  {{- end }}
+#  {{- range $i, $_ := .Messages }}
+#  {{- if eq .Role "user" }}
+#  User: {{ .Content }}
+#  {{- else if eq .Role "assistant" }}
+#  Assistant: {{- if .ToolCalls }}
+#  jsonCopy{
+#    "tool_calls": [
+#      {{- range $index, $tool := .ToolCalls }}
+#      {{- if $index }},{{- end }}
+#      {
+#        "name": "{{ $tool.Function.Name }}",
+#        "arguments": {{ $tool.Function.Arguments }}
+#      }
+#      {{- end }}
+#    ]
+#  }
+#  {{- else }}
+#  {{ .Content }}
+#  {{- end }}
+#  {{- else if eq .Role "tool" }}
+#  Tool Response ({{ .Name }}): {{ .Content }}
+#  {{- end }}
+#  {{- end }}"""
+
+
+#  PARAMETER stop "<start_of_turn>"
+PARAMETER stop "<end_of_turn>"
+
+### Tuning ##
+#  PARAMETER num_batch 1024
+PARAMETER num_ctx 32768
+#  PARAMETER num_keep 512
+#  PARAMETER temperature 0.4
+#  PARAMETER top_p 0.9
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+# default repetition penalty is 1.1, gemma likes 1.0
+#  PARAMETER repeat_penalty 1.0
+
+PARAMETER temperature 0.1
+PARAMETER top_k 64
+PARAMETER top_p 0.95
+PARAMETER min_p 0.01
+PARAMETER frequency_penalty 1.0
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+#  PARAMETER temperature 0.2
+#  # 1.0 disables top_p, so we can use min_p
+#  PARAMETER top_p 1.0
+#  PARAMETER min_p 0.9
+### min_p sampling ##
+
+
+SYSTEM """You are an expert agentic software developer AI agent proficient in multiple programming languages. Your task is to generate, complete, and refactor code snippets based on the given instructions. Provide clean, efficient, and well-commented code.
+
+Remember:
+- Follow best practices and the latest conventions.
+- Use the most current libraries, functions, and best practices. Avoid deprecated methods and outdated conventions.
+- Ensure the code is easy to understand and maintain.
+- Prefer British English spelling.
+- Output the filename and line number when providing code snippets if you know them.
+- When updating functions output the entire updated function.
+- Think carefully about what the user is requesting and the provided context of our chat and code.
+- Do not add additional prose in your responses
+
+Avoid explanations unless explicitly prompted. Be concise and focus on the task.
+"""

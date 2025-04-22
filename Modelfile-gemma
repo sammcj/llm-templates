@@ -1,24 +1,122 @@
-#  ollama create gemma-2-9b-it-sppo-iter3:q5_k_M -f modelfiles/Modelfile-gemma
+# ollama create gemma-3-12b-it:q6_k -f modelfiles/Modelfile-gemma
 
-FROM ../gemma-2-9b-it-sppo-iter3-q5_k_m-imat.gguf
-#  FROM ../gemma-2-27b-it-Q6_K_L.gguf
+#  FROM ../gemma-3-12b-it-Q6_K.gguf
 
-TEMPLATE """<start_of_turn>user
-{{ if .System }}{{ .System }} {{ end }}{{ .Prompt }}<end_of_turn>
+# ollama create gemma-3-27b-qat:q4_0 -f modelfiles/Modelfile-gemma
+FROM ../gemma-3-27b-it-q4_0.gguf
+
+#  Official template:
+#  TEMPLATE """{{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1 }}
+#  {{- if or (eq .Role "user") (eq .Role "system") }}<start_of_turn>user
+#  {{ .Content }}<end_of_turn>
+#  {{ if $last }}<start_of_turn>model
+#  {{ end }}
+#  {{- else if eq .Role "assistant" }}<start_of_turn>model
+#  {{ .Content }}{{ if not $last }}<end_of_turn>
+#  {{ end }}
+#  {{- end }}
+#  {{- end }}"""
+
+#  SRC: https://ollama.com/PetrosStav/gemma3-tools:12b/blobs/fd46d06e2520
+TEMPLATE """{{- if .System }}<start_of_turn>user
+{{ .System }}
+{{- if .Tools }}
+
+You can use these tools to help answer the user's question:
+{{- range .Tools }}
+{{ . }}
+{{- end }}
+
+When you need to use a tool, format your response as JSON as follows:
+<tool>
+{"name": "tool_name", "parameters": {"param1": "value1", "param2": "value2"}}
+</tool>
+{{- end }}<end_of_turn>
 <start_of_turn>model
-{{ .Response }}<end_of_turn>
-"""
+I understand.
+<end_of_turn>
+{{- end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<start_of_turn>user
+{{ .Content }}<end_of_turn>
+{{ if $last }}<start_of_turn>model
+{{ end }}
+{{- else if eq .Role "assistant" }}<start_of_turn>model
+{{- if .ToolCalls }}
+<tool>
+{{- range .ToolCalls }}
+{"name": "{{ .Function.Name }}", "parameters": {{ .Function.Arguments }}}
+{{- end }}
+</tool>
+{{- else }}
+{{ .Content }}
+{{- end }}{{ if not $last }}<end_of_turn>
+{{ end }}
+{{- else if eq .Role "tool" }}<start_of_turn>user
+<tool_response>
+{{ .Content }}
+</tool_response><end_of_turn>
+{{ if $last }}<start_of_turn>model
+{{ end }}
+{{- end }}
+{{- end }}"""
 
-PARAMETER stop "<start_of_turn>"
+#  alt from guy that made ollama template tester https://github.com/ollama/ollama/issues/9680#issuecomment-2722586870
+#  TEMPLATE """{{- $isFirst := true }}
+#  {{- $prevRole := "model"}}
+#  {{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1 -}}
+#  {{- $role := .Role -}}
+#  {{- if eq .Role "assistant" }}
+#  {{- $role = "model" -}}
+#  {{- else }}
+#  {{- $role = "user" -}}
+#  {{- end -}}
+#  {{- if ne $prevRole $role -}}{{- if not $isFirst }}<end_of_turn>
+#  {{ end }}<start_of_turn>{{ $role }}
+#  {{- if and (not $isFirst) .ToolCalls }}
+#  {{- range .ToolCalls }}
+#  {{- printf "\n<tool_call>\n{\"name\": \"%s\", \"arguments\": %s}\n</tool_call>" .Function.Name (json .Function.Arguments) }}
+#  {{- end }}
+#  {{- else if and $isFirst $.Tools }}
+#  # Tools
+
+#  You may call one or more functions to assist with the user query.
+
+#  You are provided with function signatures within <tools></tools> XML tags:
+#  <tools>
+#  {{- range $.Tools }}
+#  {"type": "function", "function": {{ .Function }}}
+#  {{- end }}
+#  </tools>
+
+#  For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+#  <tool_call>
+#  {"name": <function-name>, "arguments": <args-json-object>}
+#  </tool_call>
+
+#  {{- end }}
+#  {{- end }}
+#  {{- if eq .Role "tool" }}
+#  <tool_response>{{.Content}}</tool_response>
+#  {{- else }}
+#  {{.Content}}
+#  {{- end }}
+#  {{- $prevRole = $role }}
+#  {{- $isFirst = false }}
+#  {{- if $last -}}<end_of_turn>
+#  <start_of_turn>model
+#  {{ end }}
+#  {{- end }}"""
+
+#  PARAMETER stop "<start_of_turn>"
 PARAMETER stop "<end_of_turn>"
 
 ### Tuning ##
-PARAMETER num_batch 1024
 #  PARAMETER num_batch 1024
-
-## For codegen ##
-PARAMETER num_ctx 8192
-
+PARAMETER num_ctx 16384
 #  PARAMETER num_keep 512
 #  PARAMETER temperature 0.4
 #  PARAMETER top_p 0.9
@@ -27,14 +125,22 @@ PARAMETER num_ctx 8192
 #  PARAMETER repeat_last_n 50
 
 # default repetition penalty is 1.1, gemma likes 1.0
-PARAMETER repeat_penalty 1.0
+#  PARAMETER repeat_penalty 1.0
+
+### Gemma team recommended tuning for Gemma 3 ###
+# src: https://docs.unsloth.ai/basics/tutorial-how-to-run-gemma-3-effectively
+PARAMETER temperature 0.1
+PARAMETER top_k 64
+PARAMETER top_p 0.95
+PARAMETER min_p 0.01
+PARAMETER frequency_penalty 1.0
 
 ### min_p sampling ##
 # min_p works best with a bit of temperature
-PARAMETER temperature 0.2
-# 1.0 disables top_p, so we can use min_p
-PARAMETER top_p 1.0
-PARAMETER min_p 0.9
+#  PARAMETER temperature 0.2
+#  # 1.0 disables top_p, so we can use min_p
+#  PARAMETER top_p 1.0
+#  PARAMETER min_p 0.9
 ### min_p sampling ##
 
 

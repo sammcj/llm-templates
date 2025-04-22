@@ -1,0 +1,47 @@
+#  ollama create nvidia_llama-3_3-nemotron-super-49b-v1:q4_k_l -f modelfiles/Modelfile-nemotron
+
+FROM ../nvidia_Llama-3_3-Nemotron-Super-49B-v1-Q4_K_L.gguf
+
+
+TEMPLATE """{{- "<|start_header_id|>system<|end_header_id>\n\n" -}}
+{{- if and (gt (len .Messages) 0) (eq (index .Messages 0).Role "system") -}}
+{{- (index .Messages 0).Content -}}
+{{- end -}}
+{{- "<|eot_id>" -}}
+{{- range $i, $msg := .Messages -}}
+{{- if or (gt $i 0) (ne $msg.Role "system") -}}
+{{- "<|start_header_id|>" -}}
+{{- $msg.Role -}}
+{{- "<|end_header_id>\n\n" -}}
+{{- $msg.Content -}}
+{{- "<|eot_id>" -}}
+{{- end -}}
+{{- end -}}
+{{- "<|start_header_id|>assistant<|end_header_id>\n\n" -}}"""
+
+
+PARAMETER num_ctx 8192
+
+#  PARAMETER stop "<|start_header_id|>"
+#  PARAMETER stop "<|end_header_id|>"
+PARAMETER stop "<|eot_id|>"
+
+#  PARAMETER num_batch 1024
+
+## For codegen ##
+#  PARAMETER temperature 0.25
+#  PARAMETER top_p 0.8
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+PARAMETER temperature 0.2
+# 1.0 disables top_p, so we can use min_p
+PARAMETER top_p 1.0
+PARAMETER min_p 0.9
+### min_p sampling ##
+
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+
