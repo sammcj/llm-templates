@@ -4,31 +4,187 @@
 #  ollama create glm-z1-32b-0414:q6_k -f modelfiles/Modelfile-glm
 #  ollama create glm-z1-32b-0414:q5_k_m -f modelfiles/Modelfile-glm
 
-#  FROM ../GLM-4-32B-0414-F16-Q6_K.gguf
+FROM ../GLM-4-32B-0414-F16-Q6_K.gguf
 # FROM ../GLM-Z1-32B-0414-Q5_K_M.gguf
 #  FROM ../GLM-4-32B-0414-F16-Q5_K_M.gguf
-FROM ../GLM-Z1-32B-0414-Q6_K.gguf
+#  FROM ../GLM-Z1-32B-0414-Q6_K.gguf
 
-TEMPLATE """[gMASK]<sop>{{ if .System }}<|system|>
-{{ .System }}{{ end }}{{ if .Prompt }}<|user|>
-{{ .Prompt }}{{ end }}<|assistant|>
-{{ .Response }}"""
+#  Base working
+#  TEMPLATE """[gMASK]<sop>{{ if .System }}<|system|>
+#  {{ .System }}{{ end }}{{ if .Prompt }}<|user|>
+#  {{ .Prompt }}{{ end }}<|assistant|>
+#  {{ .Response }}"""
+
+#  https://ollama.com/rhundt/GLM-4-0414-32b-128k-Q4_K_M/blobs/aaa93f59d003
+TEMPLATE """[gMASK]<sop>{{- /* ---------- tools section ---------- */}}
+{{- if .Tools }}
+<|system|>
+# Available Tools
+{{- range .Tools }}
+## {{- if .Function }}{{ .Function.Name }}{{- else }}{{ .Name }}{{- end }}
+
+{{ json .Function }}
+When calling one of the tools above, pass the arguments in JSON format.
+{{- end }}
+{{- end }}
+
+{{/* ---------- system messages ---------- */}}
+{{- range .Messages }}
+  {{- if eq .Role "system" }}
+<|system|>
+{{ .Content }}
+  {{- end }}
+{{- end }}
+
+{{/* ---------- user / assistant / observation ---------- */}}
+{{- range .Messages }}
+  {{- if ne .Role "system" }}
+    {{- if eq .Role "user" }}
+<|user|>
+{{ .Content }}
+    {{- else if eq .Role "assistant" }}
+      {{- if .ToolCalls }}{{/* assistant function-call */}}
+<|assistant|>{{ json .ToolCalls }}
+{{ .Content }}
+      {{- else }}{{/* normal assistant message */}}
+<|assistant|>
+{{ .Content }}
+      {{- end }}
+    {{- else if eq .Role "observation" }}
+<|observation|>
+{{ .Content }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+<|assistant|>
+"""
+
+#  combined with mine:
+#  TEMPLATE """[gMASK]<sop>{{- /* ---------- tools section ---------- */}}
+#  {{- if .Tools }}
+#  <|system|>
+#  # Tools
+#  You have access to tools to assist you in your tasks.
+
+#  - IMPORTANT: Include **all required parameters** when calling a tool.
+#  - IMPORTANT: Do not EVER include any other text when calling a tool.
+
+#  # Available Tools
+
+#  {{- range .Tools }}
+#  ## {{- if .Function }}{{ .Function.Name }}{{- else }}{{ .Name }}{{- end }}
+
+#  {{ json .Function }}
+#  When calling one of the tools above, pass the arguments in JSON format.
+#  {{- end }}
+#  {{- end }}
+
+#  {{/* ---------- optional top-level system message ---------- */}}
+#  {{- if .System }}
+#  <|system|>
+#  {{ .System }}
+#  {{- end }}
+
+#  {{/* ---------- system messages ---------- */}}
+#  {{- range .Messages }}
+#    {{- if eq .Role "system" }}
+#  <|system|>
+#  {{ .Content }}
+#    {{- end }}
+#  {{- end }}
+
+#  {{/* ---------- user / assistant / tool / observation ---------- */}}
+#  {{- range .Messages }}
+#    {{- if ne .Role "system" }}
+#      {{- if eq .Role "user" }}
+#  <|user|>
+#  {{ .Content }}
+#      {{- else if eq .Role "assistant" }}
+#        {{- if .ToolCalls }}{{/* assistant function-call */}}
+#  <|assistant|>{{ json .ToolCalls }}
+#  {{ .Content }}
+#        {{- else }}{{/* normal assistant message */}}
+#  <|assistant|>
+#  {{ .Content }}
+#        {{- end }}
+#      {{- else if or (eq .Role "observation") (eq .Role "tool") }}
+#  <|observation|>
+#  {{ .Content }}
+#      {{- end }}
+#    {{- end }}
+#  {{- end }}
+#  <|assistant|>"""
+
+
+#  my own template that almost worked.
+#  TEMPLATE """[gMASK]<sop>{{ if .System }}<|system|>
+#  {{ .System }}{{ end }}
+
+#  {{ if .Tools }}
+#  # Available tools
+#  {{ range .Tools }}
+#  ## {{ .Function.Name }}
+#  {{ .Function }}
+#  {{ end }}
+#  When using the above functions you MUST use JSON format and only make the tool call by itself with no other text.
+#  {{ end }}
+
+#  {{ range .Messages }}
+#      {{ if eq .Role "system" }}
+#  <|system|>
+#  {{ .Content }}
+#      {{ end }}
+#      {{ if eq .Role "user" }}
+#  <|user|>
+#  {{ .Content }}
+#      {{ end }}
+#      {{ if eq .Role "assistant" }}
+#  <|assistant|>
+#  {{ .Content }}
+#      {{ end }}
+#      {{ if eq .Role "tool" }}
+#  <|tool|>
+#  {{ .Content }}
+#      {{ end }}
+#  {{ end }}
+
+#  {{ if .ToolCalls }}
+#  <|assistant|><|tool_calls_begin|>
+#  {{ range .ToolCalls }}
+#  <|tool_call_begin|>{{ .Function.Name }}<|tool_call_sep|>
+#  {
+#      "parameters": {
+#          {{ range $key, $value := .Function.Arguments }}
+#          "{{ $key }}": "{{ $value }}"{% if not @last %}, {% endif %}
+#          {{ end }}
+#      }
+#  }
+#  <|tool_call_end|>{{ end }}
+#  <|tool_calls_end|>
+#  {{ end }}
+
+#  {{ if .AddGenerationPrompt }}<|assistant|>{{ end }}"""
+
+
 
 PARAMETER stop "<|system|>"
 PARAMETER stop "<|user|>"
 PARAMETER stop "<|assistant|>"
+PARAMETER stop "<|observation|>"
 
 ### Tuning ##
 #  PARAMETER top_k 20
-PARAMETER top_p 0.8
+PARAMETER top_p 0.85
+PARAMETER temperature 0.2
 #  PARAMETER repeat_penalty 1.05
 
-PARAMETER num_ctx 32768
-PARAMETER num_keep 256
+PARAMETER num_ctx 49152
+PARAMETER num_keep 512
+#  PARAMETER num_batch 1024
 
 ### min_p sampling ##
 # min_p works best with a bit of temperature
-#  PARAMETER temperature 0.1
+#  PARAMETER temperature 0.2
 #  # 1.0 disables top_p, so we can use min_p
 #  PARAMETER top_p 1.0
 #  PARAMETER min_p 0.9
