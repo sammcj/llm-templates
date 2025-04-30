@@ -1,0 +1,431 @@
+
+# ollama create qwen3-0.6b-ud:q4_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-0.6b-ud:q6_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-1.7b-ud:q4_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-1.7b-ud:q6_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-4b-ud-128k:q6_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-32b-ud-128k:q6_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-8b-ud-128k:q6_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-14b-ud-128k:q6_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-30b-a3b-ud-128k:q6_k -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-235b-a22b-ud-128k:q2_k_xl -f modelfiles/Modelfile-qwen3
+
+# Qwen3-30B-A3B-128K-Q6_K.gguf
+# Qwen3-30B-A3B-128K-UD-Q4_K_XL.gguf
+# Qwen3-14B-128K-UD-Q6_K_XL.gguf
+# Qwen3-8B-128K-UD-Q6_K_XL.gguf
+# Qwen3-32B-128K-UD-Q4_K_XL.gguf
+# Qwen3-32B-128K-UD-Q6_K_XL.gguf
+# Qwen3-235B-A22B-UD-Q2_K_XL.gguf
+# Qwen3-0.6B-UD-Q4_K_XL.gguf
+# Qwen3-0.6B-UD-Q6_K_XL.gguf
+# Qwen3-1.7B-UD-Q4_K_XL.gguf
+# Qwen3-1.7B-UD-Q6_K_XL.gguf
+# Qwen3-4B-128K-UD-Q6_K_XL.gguf
+
+# FROM ../Qwen3-0.6B-UD-Q4_K_XL.gguf
+# FROM ../Qwen3-0.6B-UD-Q6_K_XL.gguf
+# FROM ../Qwen3-1.7B-UD-Q4_K_XL.gguf
+# FROM ../Qwen3-1.7B-UD-Q6_K_XL.gguf
+# FROM ../Qwen3-4B-128K-UD-Q6_K_XL.gguf
+# FROM ../Qwen3-8B-128K-UD-Q6_K_XL.gguf
+# FROM ../Qwen3-14B-128K-UD-Q6_K_XL.gguf
+# FROM ../Qwen3-30B-A3B-128K-Q6_K.gguf
+# FROM ../Qwen3-32B-128K-UD-Q6_K_XL.gguf
+
+FROM ../Qwen3-235B-A22B-UD-Q2_K_XL.gguf
+
+TEMPLATE """{{- if .Messages }}
+{{- if or .System .Tools }}<|im_start|>system
+{{- if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+
+# Tools
+
+You may call one or more functions to assist with the user query.
+
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{{- range .Tools }}
+{"type": "function", "function": {{ .Function }}}
+{{- end }}
+</tools>
+
+For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+<tool_call>
+{"name": <function-name>, "arguments": <args-json-object>}
+</tool_call>
+{{- end }}<|im_end|>
+{{ end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 -}}
+{{- if eq .Role "user" }}<|im_start|>user
+{{ .Content }}<|im_end|>
+{{ else if eq .Role "assistant" }}<|im_start|>assistant
+{{ if .Content }}{{ .Content }}
+{{- else if .ToolCalls }}<tool_call>
+{{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+{{ end }}</tool_call>
+{{- end }}{{ if not $last }}<|im_end|>
+{{ end }}
+{{- else if eq .Role "tool" }}<|im_start|>user
+<tool_response>
+{{ .Content }}
+</tool_response><|im_end|>
+{{ end }}
+{{- if and (ne .Role "assistant") $last }}<|im_start|>assistant
+{{ end }}
+{{- end }}
+{{- else }}
+{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+{{ end }}<|im_start|>assistant
+{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}"""
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+
+
+### Tuning ##
+
+PARAMETER num_ctx 49152
+#  PARAMETER num_keep 256
+
+#  For Q2_K_XL:
+#  PARAMETER num_batch 256
+#  PARAMETER num_ctx 32768
+#  PARAMETER num_gpu 50
+
+#  Official Qwen3 settings as per 2025-04-29 https://docs.unsloth.ai/basics/qwen3-how-to-run-and-fine-tune
+PARAMETER temperature 0.6
+PARAMETER top_k 20
+PARAMETER repeat_penalty 1
+PARAMETER top_p 0.85
+PARAMETER min_p 0
+
+### min_p sampling ##
+# min_p works best with a bit of temperature
+#  PARAMETER temperature 0.2
+#  # 1.0 disables top_p, so we can use min_p
+#  PARAMETER top_p 1.0
+#  PARAMETER min_p 0.05
+### min_p sampling ##
+
+# MOAR SPEEEED
+#  PARAMETER num_batch 1024
+
+#  64 fits RYS-XLarge-72b IQ4_XS at 21k
+#  PARAMETER num_batch 64
+
+## For codegen ##
+#  PARAMETER num_keep 512
+#  PARAMETER num_keep 1024
+#  PARAMETER top_p 0.9 # default
+#  PARAMETER top_k 20 # default
+#  PARAMETER repetition_penalty 1.05 # default
+#  PARAMETER presence_penalty 0.2
+#  PARAMETER frequency_penalty 0.2
+#  PARAMETER repeat_last_n 50
+
+#########
+
+#  This is because some template functions aren't available in the basic go string templating language.
+#  Can't use:
+#  function "sub"
+#  function "contains"
+#  function "subtract"
+#  function "split"
+
+# v4 (works)
+#  TEMPLATE """
+#  {{- if .Messages }}
+#  {{- if or .System .Tools }}<|im_start|>system
+#  {{- if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Tools }}
+
+#  # Tools
+
+#  You may call one or more functions to assist with the user query.
+
+#  You are provided with function signatures within <tools></tools> XML tags:
+#  <tools>
+#  {{- range .Tools }}
+#  {"type": "function", "function": {{ .Function }}}
+#  {{- end }}
+#  </tools>
+
+#  For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+#  <tool_call>
+#  {"name": <function-name>, "arguments": <args-json-object>}
+#  </tool_call>
+#  {{- end }}<|im_end|>
+#  {{ end }}
+
+#  {{- range $i, $msg := .Messages }}
+#  {{- if eq $msg.Role "user" }}<|im_start|>user
+#  {{ $msg.Content }}<|im_end|>
+#  {{ else if eq $msg.Role "assistant" }}<|im_start|>assistant
+#  {{ if $msg.Content }}{{ $msg.Content }}{{ end }}
+#  {{- if $msg.ToolCalls }}
+#  {{- range $toolCall := $msg.ToolCalls }}
+#  <tool_call>
+#  {"name": "{{ $toolCall.Function.Name }}", "arguments": {{ $toolCall.Function.Arguments }}}
+#  </tool_call>
+#  {{- end }}
+#  {{- end }}<|im_end|>
+#  {{ else if eq $msg.Role "tool" }}<|im_start|>user
+#  <tool_response>
+#  {{ $msg.Content }}
+#  </tool_response><|im_end|>
+#  {{ end }}
+#  {{- end }}
+
+#  {{- else }}
+#  {{- if .System }}<|im_start|>system
+#  {{ .System }}<|im_end|>
+#  {{ end }}{{ if .Prompt }}<|im_start|>user
+#  {{ .Prompt }}<|im_end|>
+#  {{ end }}<|im_start|>assistant
+#  {{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}
+#  """
+
+# v6 (works but if you add im_start it cuts off early)
+#  TEMPLATE """
+#  {{- if .Messages }}
+#  {{- if or .System .Tools }}<|im_start|>system
+#  {{- if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Tools }}
+
+#  # Tools
+
+#  You may call one or more functions to assist with the user query.
+
+#  You are provided with function signatures within <tools></tools> XML tags:
+#  <tools>
+#  {{- range .Tools }}
+#  {"type": "function", "function": {{ .Function }}}
+#  {{- end }}
+#  </tools>
+
+#  For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+#  <tool_call>
+#  {"name": <function-name>, "arguments": <args-json-object>}
+#  </tool_call>
+#  {{- end }}<|im_end|>
+#  {{ end }}
+
+#  {{- range $i, $msg := .Messages }}
+#  {{- if eq $msg.Role "user" }}<|im_start|>user
+#  {{ $msg.Content }}<|im_end|>
+#  {{ else if eq $msg.Role "assistant" }}<|im_start|>assistant
+#  {{ $msg.Content }}
+#  {{- if $msg.ToolCalls }}
+#  {{- range $toolCall := $msg.ToolCalls }}
+#  <tool_call>
+#  {"name": "{{ $toolCall.Function.Name }}", "arguments": {{ $toolCall.Function.Arguments }}}
+#  </tool_call>
+#  {{- end }}
+#  {{- end }}<|im_end|>
+#  {{ else if eq $msg.Role "tool" }}<|im_start|>user
+#  <tool_response>
+#  {{ $msg.Content }}
+#  </tool_response><|im_end|>
+#  {{ end }}
+#  {{- end }}
+
+#  {{- else }}
+#  {{- if .System }}<|im_start|>system
+#  {{ .System }}<|im_end|>
+#  {{ end }}{{ if .Prompt }}<|im_start|>user
+#  {{ .Prompt }}<|im_end|>
+#  {{ end }}<|im_start|>assistant
+#  {{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}
+#  """
+
+# v8 (works but if you add im_start it cuts off early)
+
+#  TEMPLATE """
+#  {{- if .Messages }}
+#  {{- if or .System .Tools }}<|im_start|>system
+#  {{- if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Tools }}
+
+#  # Tools
+
+#  You may call one or more functions to assist with the user query.
+
+#  You are provided with function signatures within <tools></tools> XML tags:
+#  <tools>
+#  {{- range .Tools }}
+#  {"type": "function", "function": {{ .Function }}}
+#  {{- end }}
+#  </tools>
+
+#  For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+#  <tool_call>
+#  {"name": <function-name>, "arguments": <args-json-object>}
+#  </tool_call>
+#  {{- end }}<|im_end|>
+#  {{ end }}
+
+#  {{- /* Process all messages in order */ -}}
+#  {{- range $i, $msg := .Messages }}
+#  {{- if eq $msg.Role "user" }}<|im_start|>user
+#  {{ $msg.Content }}<|im_end|>
+#  {{ else if eq $msg.Role "assistant" }}<|im_start|>assistant
+#  {{- /* Handle content and tool calls */ -}}
+#  {{ $msg.Content }}
+#  {{- if $msg.ToolCalls }}
+#  {{- range $toolCall := $msg.ToolCalls }}
+#  <tool_call>
+#  {"name": "{{ $toolCall.Function.Name }}", "arguments": {{ $toolCall.Function.Arguments }}}
+#  </tool_call>
+#  {{- end }}
+#  {{- end }}<|im_end|>
+#  {{ else if eq $msg.Role "tool" }}<|im_start|>user
+#  <tool_response>
+#  {{ $msg.Content }}
+#  </tool_response><|im_end|>
+#  {{ end }}
+#  {{- end }}
+
+#  {{- else }}
+#  {{- if .System }}<|im_start|>system
+#  {{ .System }}<|im_end|>
+#  {{ end }}{{ if .Prompt }}<|im_start|>user
+#  {{ .Prompt }}<|im_end|>
+#  {{ end }}<|im_start|>assistant
+#  {{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}
+#  """
+
+# v9 (works but if you add im_start it cuts off early)
+
+#  TEMPLATE """
+#  {{- if .Messages }}
+#  {{- /* Handle system message and tools */ -}}
+#  {{- if or .System .Tools }}<|im_start|>system
+#  {{- if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Tools }}
+
+#  # Tools
+
+#  You may call one or more functions to assist with the user query.
+
+#  You are provided with function signatures within <tools></tools> XML tags:
+#  <tools>
+#  {{- range .Tools }}
+#  {"type": "function", "function": {{ .Function }}}
+#  {{- end }}
+#  </tools>
+
+#  For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+#  <tool_call>
+#  {"name": <function-name>, "arguments": <args-json-object>}
+#  </tool_call>
+#  {{- end }}<|im_end|>
+#  {{ end }}
+
+#  {{- /* Process all messages in order */ -}}
+#  {{- range $i, $msg := .Messages }}
+#  {{- /* Handle user messages */ -}}
+#  {{- if eq $msg.Role "user" }}<|im_start|>user
+#  {{ $msg.Content }}<|im_end|>
+
+#  {{- /* Handle assistant messages */ -}}
+#  {{- else if eq $msg.Role "assistant" }}<|im_start|>assistant
+#  {{- /* Simply output the content as is - this will preserve think tags if present */ -}}
+#  {{ $msg.Content }}
+
+#  {{- /* Handle tool calls */ -}}
+#  {{- if $msg.ToolCalls }}
+#  {{- range $toolCall := $msg.ToolCalls }}
+#  <tool_call>
+#  {"name": "{{ $toolCall.Function.Name }}", "arguments": {{ $toolCall.Function.Arguments }}}
+#  </tool_call>
+#  {{- end }}
+#  {{- end }}<|im_end|>
+
+#  {{- /* Handle tool messages - simplified approach */ -}}
+#  {{- else if eq $msg.Role "tool" }}<|im_start|>user
+#  <tool_response>
+#  {{ $msg.Content }}
+#  </tool_response><|im_end|>
+#  {{- end }}
+#  {{- end }}
+
+#  {{- else }}
+#  {{- /* Handle .System and .Prompt without messages */ -}}
+#  {{- if .System }}<|im_start|>system
+#  {{ .System }}<|im_end|>
+#  {{- end }}
+#  {{- if .Prompt }}<|im_start|>user
+#  {{ .Prompt }}<|im_end|>
+#  {{- end }}<|im_start|>assistant
+#  {{- end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}
+#  """
+
+
+#  Qwen 2.5 Template (which is what Ollama is using as of 2025-04-29)
+
+#  TEMPLATE """{{- if .Messages }}
+#  {{- if or .System .Tools }}<|im_start|>system
+#  {{- if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Tools }}
+
+#  # Tools
+
+#  You may call one or more functions to assist with the user query.
+
+#  You are provided with function signatures within <tools></tools> XML tags:
+#  <tools>
+#  {{- range .Tools }}
+#  {"type": "function", "function": {{ .Function }}}
+#  {{- end }}
+#  </tools>
+
+#  For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+#  <tool_call>
+#  {"name": <function-name>, "arguments": <args-json-object>}
+#  </tool_call>
+#  {{- end }}<|im_end|>
+#  {{ end }}
+#  {{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1 -}}
+#  {{- if eq .Role "user" }}<|im_start|>user
+#  {{ .Content }}<|im_end|>
+#  {{ else if eq .Role "assistant" }}<|im_start|>assistant
+#  {{ if .Content }}{{ .Content }}
+#  {{- else if .ToolCalls }}<tool_call>
+#  {{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+#  {{ end }}</tool_call>
+#  {{- end }}{{ if not $last }}<|im_end|>
+#  {{ end }}
+#  {{- else if eq .Role "tool" }}<|im_start|>user
+#  <tool_response>
+#  {{ .Content }}
+#  </tool_response><|im_end|>
+#  {{ end }}
+#  {{- if and (ne .Role "assistant") $last }}<|im_start|>assistant
+#  {{ end }}
+#  {{- end }}
+#  {{- else }}
+#  {{- if .System }}<|im_start|>system
+#  {{ .System }}<|im_end|>
+#  {{ end }}{{ if .Prompt }}<|im_start|>user
+#  {{ .Prompt }}<|im_end|>
+#  {{ end }}<|im_start|>assistant
+#  {{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}"""

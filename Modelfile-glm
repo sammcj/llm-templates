@@ -1,10 +1,18 @@
 
+#  ollama create glm-4-32b-0414-b:q6_k_l -f modelfiles/Modelfile-glm
+
+#  ollama create glm-4-32b-0414-ul:q4_k_xl -f modelfiles/Modelfile-glm
+#  ollama create glm-4-9b-0414:q6_k_l -f modelfiles/Modelfile-glm
 #  ollama create glm-4-32b-0414:q6_k -f modelfiles/Modelfile-glm
 #  ollama create glm-4-32b-0414:q5_k_m -f modelfiles/Modelfile-glm
 #  ollama create glm-z1-32b-0414:q6_k -f modelfiles/Modelfile-glm
 #  ollama create glm-z1-32b-0414:q5_k_m -f modelfiles/Modelfile-glm
 
-FROM ../GLM-4-32B-0414-F16-Q6_K.gguf
+#  THUDM_GLM-4-32B-0414-Q6_K_L.gguf
+#  GLM-4-32B-0414-UD-Q4_K_XL.gguf
+
+FROM ../THUDM_GLM-4-32B-0414-Q6_K_L.gguf
+
 # FROM ../GLM-Z1-32B-0414-Q5_K_M.gguf
 #  FROM ../GLM-4-32B-0414-F16-Q5_K_M.gguf
 #  FROM ../GLM-Z1-32B-0414-Q6_K.gguf
@@ -174,20 +182,19 @@ PARAMETER stop "<|observation|>"
 
 ### Tuning ##
 #  PARAMETER top_k 20
-PARAMETER top_p 0.85
-PARAMETER temperature 0.2
-#  PARAMETER repeat_penalty 1.05
+#  PARAMETER top_p 0.85
+#  PARAMETER temperature 0.2
+PARAMETER repeat_penalty 1.05
 
 PARAMETER num_ctx 49152
-PARAMETER num_keep 512
+PARAMETER num_keep 256
 #  PARAMETER num_batch 1024
 
 ### min_p sampling ##
 # min_p works best with a bit of temperature
-#  PARAMETER temperature 0.2
-#  # 1.0 disables top_p, so we can use min_p
-#  PARAMETER top_p 1.0
-#  PARAMETER min_p 0.9
+PARAMETER temperature 0.2
+PARAMETER top_p 1.0
+PARAMETER min_p 0.05
 ### min_p sampling ##
 
 #  top_p 0.8

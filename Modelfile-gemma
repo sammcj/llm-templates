@@ -1,9 +1,9 @@
-# ollama create gemma-3-12b-it:q6_k -f modelfiles/Modelfile-gemma
+# ollama create gemma-3-27b-ud-it:q6_k_xl -f modelfiles/Modelfile-gemma
 
 #  FROM ../gemma-3-12b-it-Q6_K.gguf
 
 # ollama create gemma-3-27b-qat:q4_0 -f modelfiles/Modelfile-gemma
-FROM ../gemma-3-27b-it-q4_0.gguf
+FROM ../gemma-3-27b-it-UD-Q6_K_XL.gguf
 
 #  Official template:
 #  TEMPLATE """{{- range $i, $_ := .Messages }}
