@@ -1,0 +1,22 @@
+{
+    "name": "Jellon_Qwen3-32B-exl2-4bpw",
+    "max_seq_len": 65536,
+    "cache_size": 131072,
+    "gpu_split_auto": true,
+    "gpu_split": "",
+    "rope_scale": null,
+    "rope_alpha": null,
+    "model_rope_alpha_auto": true,
+    "cache_mode": "Q4",
+    "prompt_template": null,
+    "num_experts_per_token": null,
+    "draft_model_name": "CAPsMANyo_Qwen3-0.6B_exl2",
+    "draft_rope_scale": null,
+    "draft_rope_alpha": null,
+    "draft_rope_alpha_auto": true,
+    "draft_cache_mode": "Q4",
+    "tensor_parallel": true,
+    "vision": false,
+    "autosplit_reserve": "",
+    "chunk_size": null
+}
