@@ -31,7 +31,7 @@
     {%- if message.role == "user" or (message.role == "system" and loop.index0 != 0) %}
         {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' }}
     {%- elif message.role == "assistant" %}
-        {%- set content = message.content %}
+        {%- set content = message.content if message.content is defined and message.content is not none else '' %}
         {%- set reasoning_content = '' %}
         {%- if message.reasoning_content is defined and message.reasoning_content %}
             {%- set reasoning_content = message.reasoning_content %}

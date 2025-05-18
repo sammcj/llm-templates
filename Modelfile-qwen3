@@ -48,10 +48,10 @@ PARAMETER stop "</execute_command>"
 
 # Cline stop words:
 # PARAMETER stop "</thinking>"
-# PARAMETER stop "</tool_call>"
-# PARAMETER stop "</tool_response>"
-# PARAMETER stop "</write_to_file>"
-# PARAMETER stop "</execute_command>"
+#  PARAMETER stop "</tool_call>"
+#  PARAMETER stop "</tool_response>"
+#  PARAMETER stop "</write_to_file>"
+#  PARAMETER stop "</execute_command>"
 
 
 ### Tuning ##
@@ -72,9 +72,9 @@ PARAMETER num_gpu 99
 PARAMETER temperature 0.6
 PARAMETER top_k 20
 PARAMETER repeat_penalty 1.0
-PARAMETER presest_penalty 1.5
+PARAMETER presence_penalty 1.5
 PARAMETER top_p 0.95
-PARAMETER min_p 0.0
+PARAMETER min_p 0.01
 #  PARAMETER num_keep 256
 
 

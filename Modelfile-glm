@@ -179,6 +179,13 @@ PARAMETER stop "<|system|>"
 PARAMETER stop "<|user|>"
 PARAMETER stop "<|assistant|>"
 PARAMETER stop "<|observation|>"
+PARAMETER stop "</thinking>"
+PARAMETER stop "</tool_call>"
+PARAMETER stop "</tool_response>"
+PARAMETER stop "</ask_followup_question>"
+PARAMETER stop "</attempt_completion>"
+PARAMETER stop "</write_to_file>"
+PARAMETER stop "</execute_command>"
 
 ### Tuning ##
 #  PARAMETER top_k 20
@@ -187,12 +194,12 @@ PARAMETER stop "<|observation|>"
 PARAMETER repeat_penalty 1.05
 
 PARAMETER num_ctx 49152
-PARAMETER num_keep 256
+PARAMETER num_keep 512
 #  PARAMETER num_batch 1024
 
 ### min_p sampling ##
 # min_p works best with a bit of temperature
-PARAMETER temperature 0.2
+PARAMETER temperature 0.25
 PARAMETER top_p 1.0
 PARAMETER min_p 0.05
 ### min_p sampling ##
