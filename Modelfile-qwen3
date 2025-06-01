@@ -5,6 +5,7 @@
 # ollama create qwen3-1.7b-ud:q4_k_xl -f modelfiles/Modelfile-qwen3
 # ollama create qwen3-1.7b-ud:q6_k_xl -f modelfiles/Modelfile-qwen3
 # ollama create qwen3-4b-ud-128k:q6_k_xl -f modelfiles/Modelfile-qwen3
+# ollama create qwen3-4b-ud-128k-nothink:q6_k_xl -f modelfiles/Modelfile-qwen3
 # ollama create qwen3-8b-ud-128k:q6_k_xl -f modelfiles/Modelfile-qwen3
 # ollama create qwen3-14b-ud-128k:q6_k_xl -f modelfiles/Modelfile-qwen3
 # ollama create qwen3-30b-a3b-ud-128k:q4_k_xl -f modelfiles/Modelfile-qwen3
@@ -16,12 +17,11 @@
 # ollama create qwen3-235b-a22b-ud-128k:q2_k_xl -f modelfiles/Modelfile-qwen3
 # ollama create qwen3-235b-a22b:iq2_m -f modelfiles/Modelfile-qwen3
 
-# ollama create qwen3-30b-a3b-ud-128k-cline:q6_k -f modelfiles/Modelfile-qwen3
-#  FROM qwen3-30b-a3b-ud-128k:q6_k
+
+FROM qwen3-30b-a3b-ud-128k:q4_k_xl
 
 #  FROM ../Qwen3-0.6B-UD-Q4_K_XL.gguf
 #  FROM ../Qwen3-0.6B-Q5_K_M.gguf
-
 #  FROM ../Qwen3-0.6B-UD-Q6_K_XL.gguf
 #  FROM ../Qwen3-1.7B-UD-Q4_K_XL.gguf
 # FROM ../Qwen3-1.7B-UD-Q6_K_XL.gguf
@@ -34,7 +34,7 @@
 #  FROM ../Qwen3-30B-A3B-128K-Q8_0.gguf
 # FROM ../Qwen3-32B-UD-Q4_K_XL.gguf
 #  FROM ../Qwen3-32B-128K-UD-Q4_K_XL.gguf
-FROM ../Qwen3-32B-128K-UD-Q6_K_XL.gguf
+#  FROM ../Qwen3-32B-128K-UD-Q6_K_XL.gguf
 # FROM ../Qwen3-235B-A22B-UD-Q2_K_XL.gguf
 #  FROM ../Qwen3-235B-A22B.i1-IQ2_M.gguf
 
@@ -73,15 +73,20 @@ PARAMETER temperature 0.6
 PARAMETER top_k 20
 PARAMETER repeat_penalty 1.0
 PARAMETER presence_penalty 1.5
+# WITH A c! not presense_penalty!
 PARAMETER top_p 0.95
 PARAMETER min_p 0.01
 #  PARAMETER num_keep 256
 
 
-#  Ollama SHA eb4402837c78
-TEMPLATE """{{- if .Messages }}
+
+TEMPLATE """
+{{- $lastUserIdx := -1 -}}
+{{- range $idx, $msg := .Messages -}}
+{{- if eq $msg.Role "user" }}{{ $lastUserIdx = $idx }}{{ end -}}
+{{- end }}
 {{- if or .System .Tools }}<|im_start|>system
-{{- if .System }}
+{{ if .System }}
 {{ .System }}
 {{- end }}
 {{- if .Tools }}
@@ -101,13 +106,24 @@ For each function call, return a json object with function name and arguments wi
 <tool_call>
 {"name": <function-name>, "arguments": <args-json-object>}
 </tool_call>
-{{- end }}<|im_end|>
+{{- end -}}
+<|im_end|>
 {{ end }}
 {{- range $i, $_ := .Messages }}
 {{- $last := eq (len (slice $.Messages $i)) 1 -}}
 {{- if eq .Role "user" }}<|im_start|>user
-{{ .Content }}<|im_end|>
+{{ .Content }}
+{{- if and $.IsThinkSet (eq $i $lastUserIdx) }}
+   {{- if $.Think -}}
+      {{- " "}}/think
+   {{- else -}}
+      {{- " "}}/no_think
+   {{- end -}}
+{{- end }}<|im_end|>
 {{ else if eq .Role "assistant" }}<|im_start|>assistant
+{{ if (and $.IsThinkSet (and .Thinking (or $last (gt $i $lastUserIdx)))) -}}
+<think>{{ .Thinking }}</think>
+{{ end -}}
 {{ if .Content }}{{ .Content }}
 {{- else if .ToolCalls }}<tool_call>
 {{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
@@ -120,15 +136,14 @@ For each function call, return a json object with function name and arguments wi
 </tool_response><|im_end|>
 {{ end }}
 {{- if and (ne .Role "assistant") $last }}<|im_start|>assistant
+{{ if and $.IsThinkSet (not $.Think) -}}
+<think>
+
+</think>
+
+{{ end -}}
 {{ end }}
-{{- end }}
-{{- else }}
-{{- if .System }}<|im_start|>system
-{{ .System }}<|im_end|>
-{{ end }}{{ if .Prompt }}<|im_start|>user
-{{ .Prompt }}<|im_end|>
-{{ end }}<|im_start|>assistant
-{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}"""
+{{- end }}"""
 
 
 #  Nothink template

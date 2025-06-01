@@ -1,15 +1,21 @@
-#  ollama create deepseek-v3-0324-ud:iq2_xxs -f Modelfile-deepseek-r1
+#  ollama create sammcj/deepseek-r1-0528-qwen3-8b-ud:16k-Q6_K_XL -f Modelfile-deepseek-r1
 
 #  FROM ./DeepSeek-R1-IQ3_XXS.gguf
-FROM ../DeepSeek-V3-0324-UD-IQ2_XXS.gguf
+FROM ../DeepSeek-R1-0528-Qwen3-8B-UD-Q6_K_XL.gguf
+
+PARAMETER num_ctx 16384
 
 # Note this will use a lot of vRAM as deepseek v3 architecture doesn't support flash attention/qkv
-PARAMETER num_ctx 4096
-PARAMETER num_batch 32
+#  PARAMETER num_batch 32
 
 # basic sampling
-PARAMETER temperature 0.2
-PARAMETER top_p 0.85
+PARAMETER temperature 0.6
+PARAMETER top_p 0.95
+PARAMETER min_p 0.01
+
+PARAMETER num_keep 512
+PARAMETER num_gpu 99
+
 
 PARAMETER stop "<｜begin▁of▁sentence｜>"
 PARAMETER stop "<｜end▁of▁sentence｜>"
@@ -23,25 +29,58 @@ PARAMETER stop "<｜tool▁calls▁begin｜>"
 PARAMETER stop "<｜tool▁calls▁end｜>"
 PARAMETER stop "<｜tool▁sep｜>"
 
+#  Cline stop Parameters
+#  PARAMETER stop "</thinking>"
+PARAMETER stop "</tool_call>"
+PARAMETER stop "</tool_response>"
+PARAMETER stop "</ask_followup_question>"
+PARAMETER stop "</attempt_completion>"
+PARAMETER stop "</write_to_file>"
+PARAMETER stop "</execute_command>"
+PARAMETER stop "</s>"
+PARAMETER stop "[/TOOL_RESULTS]"
+
 ### TEMPLATES ###
 
+#  DeepSeek R1 Qwen 3 8b distill template from Ollama - might be missing tool calls?
 TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
 {{- range $i, $_ := .Messages }}
 {{- $last := eq (len (slice $.Messages $i)) 1}}
 {{- if eq .Role "user" }}<｜User｜>{{ .Content }}
-{{- else if eq .Role "assistant" }}
-{{- if .Content }}<｜Assistant｜>{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
-{{- else if .ToolCalls }}<｜Assistant｜><｜tool▁calls▁begin｜>
-{{- range $j, $tool := .ToolCalls }}<｜tool▁call▁begin｜>{{ $tool.Type }}<｜tool▁sep｜>{{ $tool.Function.Name }}
-```json
-{{ $tool.Function.Arguments }}
-```<｜tool▁call▁end｜>{{- end }}<｜tool▁calls▁end｜><｜end▁of▁sentence｜>
+{{- else if eq .Role "assistant" }}<｜Assistant｜>
+  {{- if and $.IsThinkSet (and $last .Thinking) -}}
+<think>
+{{ .Thinking }}
+</think>
+{{- end }}{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
 {{- end }}
-{{- else if eq .Role "tool" }}{{- if eq $i 0 }}<｜tool▁outputs▁begin｜>{{- end }}<｜tool▁output▁begin｜>{{ .Content }}<｜tool▁output▁end｜>
-{{- if $last }}<｜tool▁outputs▁end｜>{{- end }}
-{{- end }}
-{{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
+{{- if and $last (ne .Role "assistant") }}<｜Assistant｜>
+{{- if and $.IsThinkSet (not $.Think) -}}
+<think>
+
+</think>
+
+{{ end }}
+{{- end -}}
 {{- end }}"""
+
+#  TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
+#  {{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1}}
+#  {{- if eq .Role "user" }}<｜User｜>{{ .Content }}
+#  {{- else if eq .Role "assistant" }}
+#  {{- if .Content }}<｜Assistant｜>{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
+#  {{- else if .ToolCalls }}<｜Assistant｜><｜tool▁calls▁begin｜>
+#  {{- range $j, $tool := .ToolCalls }}<｜tool▁call▁begin｜>{{ $tool.Type }}<｜tool▁sep｜>{{ $tool.Function.Name }}
+#  ```json
+#  {{ $tool.Function.Arguments }}
+#  ```<｜tool▁call▁end｜>{{- end }}<｜tool▁calls▁end｜><｜end▁of▁sentence｜>
+#  {{- end }}
+#  {{- else if eq .Role "tool" }}{{- if eq $i 0 }}<｜tool▁outputs▁begin｜>{{- end }}<｜tool▁output▁begin｜>{{ .Content }}<｜tool▁output▁end｜>
+#  {{- if $last }}<｜tool▁outputs▁end｜>{{- end }}
+#  {{- end }}
+#  {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
+#  {{- end }}"""
 
 ### SAMPLING ###
 
