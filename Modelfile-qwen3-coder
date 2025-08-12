@@ -1,0 +1,162 @@
+
+# ollama create qwen3-coder-30b-a3b-ud:q5_k_xl -f modelfiles/Modelfile-qwen3
+
+FROM ../Qwen3-Coder-30B-A3B-Instruct-UD-Q5_K_XL.gguf
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER stop "</tool_call>"
+PARAMETER stop "</tool_response>"
+PARAMETER stop "</write_to_file>"
+PARAMETER stop "</execute_command>"
+#  PARAMETER stop "</thinking>"
+
+# Cline stop words:
+# PARAMETER stop "</thinking>"
+#  PARAMETER stop "</tool_call>"
+#  PARAMETER stop "</tool_response>"
+#  PARAMETER stop "</write_to_file>"
+#  PARAMETER stop "</execute_command>"
+
+
+### Tuning ##
+
+#  https://docs.unsloth.ai/basics/qwen3-coder-how-to-run-locally#run-qwen3-coder-30b-a3b-instruct
+PARAMETER num_ctx 32768
+#  PARAMETER num_predict 32768
+#  PARAMETER num_ctx 131072
+#  PARAMETER num_predict 131072
+
+#  PARAMETER num_batch 256
+PARAMETER num_gpu 99
+
+PARAMETER temperature 0.7
+PARAMETER top_k 20
+PARAMETER repeat_penalty 1.05
+#  PARAMETER presence_penalty 1.4
+# WITH A c! not presense_penalty!
+PARAMETER top_p 0.8
+PARAMETER min_p 0.01
+PARAMETER num_keep 256
+
+# https://github.com/ollama/ollama/issues/11621#issuecomment-3146969862
+TEMPLATE """
+{{- if .Messages }}
+{{- if or .System .Tools }}<|im_start|>system
+{{- if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+
+# Tools
+
+You may call one or more functions to assist with the user query.
+
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{{- range .Tools }}
+{"type": "function", "function": {{ .Function }}}
+{{- end }}
+</tools>
+
+For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+<tool_call>
+{"name": "function_name", "arguments": {"arg1": "value1", "arg2": "value2"}}
+</tool_call>
+
+{{- end }}<|im_end|>
+{{ end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 -}}
+{{- if eq .Role "user" }}<|im_start|>user
+{{ .Content }}<|im_end|>
+{{ else if eq .Role "assistant" }}<|im_start|>assistant
+{{ if .Content }}{{ .Content }}
+{{- else if .ToolCalls }}<tool_call>
+{{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+{{ end }}</tool_call>
+{{- end }}{{ if not $last }}<|im_end|>
+{{ end }}
+{{- else if eq .Role "tool" }}<|im_start|>user
+<tool_response>
+{{ .Content }}
+</tool_response><|im_end|>
+{{ end }}
+{{- if and (ne .Role "assistant") $last }}<|im_start|>assistant
+{{ end }}
+{{- end }}
+{{- else }}
+{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+{{ end }}<|im_start|>assistant
+{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}
+"""
+
+# DISABLED:  Use the GGUF template instead
+#
+#  TEMPLATE """{{- $lastUserIdx := -1 -}}
+#  {{- range $idx, $msg := .Messages -}}
+#  {{- if eq $msg.Role "user" }}{{ $lastUserIdx = $idx }}{{ end -}}
+#  {{- end }}
+#  {{- if or .System .Tools }}<|im_start|>system
+#  {{ if .System }}
+#  {{ .System }}
+#  {{- end }}
+#  {{- if .Tools }}
+
+#  # Tools
+
+#  You may call one or more functions to assist with the user query.
+
+#  You are provided with function signatures within <tools></tools> XML tags:
+#  <tools>
+#  {{- range .Tools }}
+#  {"type": "function", "function": {{ .Function }}}
+#  {{- end }}
+#  </tools>
+
+#  For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+#  <tool_call>
+#  {"name": <function-name>, "arguments": <args-json-object>}
+#  </tool_call>
+#  {{- end -}}
+#  <|im_end|>
+#  {{ end }}
+#  {{- range $i, $_ := .Messages }}
+#  {{- $last := eq (len (slice $.Messages $i)) 1 -}}
+#  {{- if eq .Role "user" }}<|im_start|>user
+#  {{ .Content }}
+#  {{- if and $.IsThinkSet (eq $i $lastUserIdx) }}
+#     {{- if $.Think -}}
+#        {{- " "}}/think
+#     {{- else -}}
+#        {{- " "}}/no_think
+#     {{- end -}}
+#  {{- end }}<|im_end|>
+#  {{ else if eq .Role "assistant" }}<|im_start|>assistant
+#  {{ if (and $.IsThinkSet (and .Thinking (or $last (gt $i $lastUserIdx)))) -}}
+#  <think>{{ .Thinking }}</think>
+#  {{ end -}}
+#  {{ if .Content }}{{ .Content }}
+#  {{- else if .ToolCalls }}<tool_call>
+#  {{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+#  {{ end }}</tool_call>
+#  {{- end }}{{ if not $last }}<|im_end|>
+#  {{ end }}
+#  {{- else if eq .Role "tool" }}<|im_start|>user
+#  <tool_response>
+#  {{ .Content }}
+#  </tool_response><|im_end|>
+#  {{ end }}
+#  {{- if and (ne .Role "assistant") $last }}<|im_start|>assistant
+#  {{ if and $.IsThinkSet (not $.Think) -}}
+#  <think>
+
+#  </think>
+
+#  {{ end -}}
+#  {{ end }}
+#  {{- end }}"""

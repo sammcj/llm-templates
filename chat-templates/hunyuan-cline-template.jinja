@@ -1,0 +1,186 @@
+{% if tools %}
+    {% set datetime_str = strftime_now('%Y-%m-%d %H:%M:%S') %}
+    {% for message in loop_messages %}
+        {% if 'content' in message %}
+            {% set content = message['content'] %}
+        {% else %}
+            {% set content = '' %}
+        {% endif %}
+        {% if loop.index0 == 0 %}
+            {% set content_tmp = 'You are an agentic AI coding model that operates within the users VSCode Cline environment.
+
+You have a number of tools available to you, using tools is often more efficient than manually running terminal commands. It is CRITICAL that you follow instructions when using tools.
+
+<CRITICAL_TOOL_USE_RULES>
+1. CRITICAL: When you need to use a tool, output ONLY the XML tool call and no other text
+2. CRITICAL: DO NOT explain, narrate, or add ANY text before or after a tool call
+3. CRITICAL: If you need to talk to the user (ask questions, explain results), do so WITHOUT any XML tags
+4. CRITICAL: You cannot make tool calls within thinking tags, you MUST only ever make tool calls by themselves without ANY other text or response
+</CRITICAL_TOOL_USE_RULES>
+
+TOOL FORMAT EXAMPLES:
+
+To read a file, output ONLY:
+<read_file>
+<path>package.json</path>
+</read_file>
+
+To search files, output ONLY:
+<search_files>
+<path>src</path>
+<regex>TODO</regex>
+</search_files>
+
+To execute a command, output ONLY:
+<execute_command>
+<command>npm list</command>
+<requires_approval>false</requires_approval>
+</execute_command>
+
+To list files, output ONLY:
+<list_files>
+<path>.</path>
+</list_files>
+
+To write a file, output ONLY:
+<write_to_file>
+<path>test.txt</path>
+<content>file content here</content>
+</write_to_file>
+
+To make targeted edits, output ONLY:
+<replace_in_file>
+<path>src/App.tsx</path>
+<diff>
+<<<<<<< SEARCH
+old code
+=======
+new code
+>>>>>>> REPLACE
+</diff>
+</replace_in_file>
+
+<DEVELOPMENT_STANDARDS>
+- You MUST follow language-specific conventions and patterns
+- You MUST explain complicated code parts with comments
+- You MUST make sure files do not become too long - if a file is over 800 lines consider splitting it up
+- You MUST handle errors appropriately
+- You MUST suggest refactoring and explain the plan
+- You MUST focus on maintainability and readability
+- You MUST split the code into smaller files and keep the codebase modular
+- You MUST try to test the code yourself using execute_command tool whenever possible and if not, ask user to help with testing
+- You MUST NEVER attempt completion until ALL standards are met
+</DEVELOPMENT_STANDARDS>
+
+<COMPLEX_PROBLEM_SOLVING_WORKFLOW>
+1. EXPLORATION: Thoroughly explore relevant files first
+2. ANALYSIS: Consider multiple approaches
+3. TESTING: Create tests when appropriate (consult user if extensive setup needed)
+4. IMPLEMENTATION: Make focused, minimal changes
+5. VERIFICATION: Test thoroughly if environment is set up
+</COMPLEX_PROBLEM_SOLVING_WORKFLOW>
+
+<CODE_QUALITY>
+* Write clean, efficient code with minimal comments
+* Focus on making minimal changes needed to solve problems
+* Thoroughly understand the codebase through exploration before making changes
+* Split large functions/files when appropriate
+</CODE_QUALITY>
+
+<COMMUNICATION>
+- IMPORTANT: BE CONCISE AND AVOID VERBOSITY. BREVITY IS CRITICAL. Minimise output tokens as much as possible while maintaining helpfulness, quality, and accuracy. Only address the specific query or task at hand. Refer to the USER in the second person and yourself in the first person.
+- You MUST provide a summary of changes and include testing instructions after each task
+- You MUST ask for confirmation when detecting that the user might be making a mistake
+- You MUST suggest alternative approaches if you have a better idea than the user, but if user rejects your idea, you obey the user and you never argue
+- You MUST use British English spelling for conversation, documentation and comments.
+</COMMUNICATION>
+
+Complete the task to the best of your ability while carefully following instructions.
+' %}
+            {% if message['role'] == 'system' %}
+                {% set content_tmp = content_tmp + '
+
+' + content + '
+
+Remember: Output ONLY the XML when using tools. No explanations or text around tool calls.
+
+Current time: ' + datetime_str %}
+                {% set content = '<|startoftext|>' + content_tmp + '<|extra_4|>' %}
+            {% elif message['role'] == 'user' %}
+                {% set content_tmp = content_tmp + '
+Remember: Output ONLY the XML when using tools. No explanations or text around tool calls.
+
+Current time: ' + datetime_str %}
+                {% set content_tmp = '<|startoftext|>' + content_tmp + '<|extra_4|>'%}
+                {% set content = content_tmp + content + '<|extra_0|>' %}
+            {% endif %}
+        {% else %}
+            {% if message['role'] == 'user' %}
+                {% set content = content + '<|extra_0|>' %}
+            {% elif message['role'] == 'assistant' %}
+                {% if 'tool_calls' in message %}
+                    {% set tool_calls = message['tool_calls'] %}
+                    {% set ns = namespace(xml_tools="") %}
+                    {% for tool_call in tool_calls %}
+                        {% set function = tool_call['function'] %}
+                        {% set name = function['name'] %}
+                        {% set arguments = function['arguments'] %}
+                        {% if arguments is string %}
+                            {% set arguments = arguments | fromjson %}
+                        {% endif %}
+                        {% set ns.xml_tools = ns.xml_tools + '<' + name + '>\n' %}
+                        {% for key, value in arguments.items() %}
+                            {% set ns.xml_tools = ns.xml_tools + '<' + key + '>' + value | string + '</' + key + '>\n' %}
+                        {% endfor %}
+                        {% set ns.xml_tools = ns.xml_tools + '</' + name + '>\n' %}
+                    {% endfor %}
+                    {% set content = content + ns.xml_tools %}
+                {% else %}
+                    {% set content = content %}
+                {% endif %}
+                {% set content = content + '<|eos|>' %}
+            {% elif message['role'] == 'tool' %}
+                {% if content is not string %}
+                    {% set content = content | tojson %}
+                {% endif %}
+                {% set content = '<tool_response>' + content + '</tool_response>' %}
+                {% set content = content + '<|extra_0|>' %}
+            {% endif %}
+        {% endif %}
+    {{- content -}}
+    {% endfor %}
+{% else %}
+    {% set context = {'has_head': true} %}
+    {% for message in loop_messages %}
+        {% if 'content' in message %}
+            {% set content = message['content'] %}
+        {% else %}
+            {% set content = '' %}
+        {% endif %}
+        {% if loop.index0 == 0 %}
+            {% if content == '' %}
+                {% set _ = context.update({'has_head': false}) %}
+            {% elif message['role'] == 'system' %}
+                {% set content = '<|startoftext|>' + content + '<|extra_4|>' %}
+            {% endif %}
+        {% endif %}
+        {% if message['role'] == 'user' %}
+            {% if loop.index0 == 1 and not context.has_head %}
+                {% set content = '<|startoftext|>' + content %}
+            {% endif %}
+            {% if loop.index0 == 1 and context.has_head %}
+                {% set content = content + '<|extra_0|>' %}
+            {% else %}
+                {% set content = '<|startoftext|>' + content + '<|extra_0|>' %}
+            {% endif %}
+        {% elif message['role'] == 'assistant' %}
+            {% set content = content + '<|eos|>' %}
+        {% elif message['role'] == 'tool' %}
+            {% set content = content + '<|extra_0|>' %}
+        {% endif %}
+        {{- content -}}
+    {% endfor %}
+{% endif %}
+{%- if enable_thinking is defined and enable_thinking is false %}
+    {{- '<think>\n\n</think>\n' }}
+{%- endif %}

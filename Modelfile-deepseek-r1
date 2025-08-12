@@ -42,45 +42,107 @@ PARAMETER stop "[/TOOL_RESULTS]"
 
 ### TEMPLATES ###
 
-#  DeepSeek R1 Qwen 3 8b distill template from Ollama - might be missing tool calls?
-TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
+#  Sam's hybrid with tool calls
+TEMPLATE """{{- if .Messages }}
+{{- if or .System .Tools }}
+{{- if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+When using a tool, format as:
+{"name": "function_name", "parameters": {"param1": "value1"}}
+
+The following tools are available when needed for specific tasks:
+{{ $.Tools }}
+{{- end }}
+{{- end }}
 {{- range $i, $_ := .Messages }}
-{{- $last := eq (len (slice $.Messages $i)) 1}}
-{{- if eq .Role "user" }}<｜User｜>{{ .Content }}
-{{- else if eq .Role "assistant" }}<｜Assistant｜>
-  {{- if and $.IsThinkSet (and $last .Thinking) -}}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<｜User｜>
+{{- if and $.Tools $last }}
+Given the tools, please respond with a JSON object for a function call with its proper arguments that best answers the given prompt.
+Prioritise specific concurrent tool calls over a single generic tool call. Use tools first.
+Respond in the format {"name": function name, "parameters": dictionary of argument name and its value}.
+{{- end }}
+{{ .Content }}
+{{- if $last }}<｜Assistant｜>{{ end }}
+{{- else if eq .Role "assistant" }}
+<｜Assistant｜>
+
 <think>
 {{ .Thinking }}
 </think>
-{{- end }}{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
+
+{{- if .ToolCalls }}
+{{- range .ToolCalls }}
+{"name": "{{ .Function.Name }}", "parameters": {{ .Function.Arguments }}}
 {{- end }}
+{{- else }}
+{{ .Content }}
+{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
+{{- end }}
+{{- else if eq .Role "tool" }}<｜end▁of▁sentence｜><｜tool▁outputs▁begin｜><｜tool▁output▁begin｜>{{ .Content }}<｜tool▁output▁end｜><｜tool▁outputs▁end｜>
 {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>
 {{- if and $.IsThinkSet (not $.Think) -}}
 <think>
 
 </think>
-
 {{ end }}
-{{- end -}}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- else }}
+{{- if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Prompt }}
+<｜User｜>
+{{ .Prompt }}
+{{- end }}
+<｜Assistant｜>
+{{ .Response }}
+{{- if .Response }}{{ end }}
 {{- end }}"""
 
+#  DeepSeek R1 Qwen 3 8b distill template from Ollama - might be missing tool calls?
 #  TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
 #  {{- range $i, $_ := .Messages }}
 #  {{- $last := eq (len (slice $.Messages $i)) 1}}
 #  {{- if eq .Role "user" }}<｜User｜>{{ .Content }}
-#  {{- else if eq .Role "assistant" }}
-#  {{- if .Content }}<｜Assistant｜>{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
-#  {{- else if .ToolCalls }}<｜Assistant｜><｜tool▁calls▁begin｜>
-#  {{- range $j, $tool := .ToolCalls }}<｜tool▁call▁begin｜>{{ $tool.Type }}<｜tool▁sep｜>{{ $tool.Function.Name }}
-#  ```json
-#  {{ $tool.Function.Arguments }}
-#  ```<｜tool▁call▁end｜>{{- end }}<｜tool▁calls▁end｜><｜end▁of▁sentence｜>
+#  {{- else if eq .Role "assistant" }}<｜Assistant｜>
+#    {{- if and $.IsThinkSet (and $last .Thinking) -}}
+#  <think>
+#  {{ .Thinking }}
+#  </think>
+#  {{- end }}{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
 #  {{- end }}
-#  {{- else if eq .Role "tool" }}{{- if eq $i 0 }}<｜tool▁outputs▁begin｜>{{- end }}<｜tool▁output▁begin｜>{{ .Content }}<｜tool▁output▁end｜>
-#  {{- if $last }}<｜tool▁outputs▁end｜>{{- end }}
-#  {{- end }}
-#  {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
+#  {{- if and $last (ne .Role "assistant") }}<｜Assistant｜>
+#  {{- if and $.IsThinkSet (not $.Think) -}}
+#  <think>
+
+#  </think>
+
+#  {{ end }}
+#  {{- end -}}
 #  {{- end }}"""
+
+TEMPLATE """{{- if .System }}{{ .System }}{{ end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1}}
+{{- if eq .Role "user" }}<｜User｜>{{ .Content }}
+{{- else if eq .Role "assistant" }}
+{{- if .Content }}<｜Assistant｜>{{ .Content }}{{- if not $last }}<｜end▁of▁sentence｜>{{- end }}
+{{- else if .ToolCalls }}<｜Assistant｜><｜tool▁calls▁begin｜>
+{{- range $j, $tool := .ToolCalls }}<｜tool▁call▁begin｜>{{ $tool.Type }}<｜tool▁sep｜>{{ $tool.Function.Name }}
+```json
+{{ $tool.Function.Arguments }}
+```<｜tool▁call▁end｜>{{- end }}<｜tool▁calls▁end｜><｜end▁of▁sentence｜>
+{{- end }}
+{{- else if eq .Role "tool" }}{{- if eq $i 0 }}<｜tool▁outputs▁begin｜>{{- end }}<｜tool▁output▁begin｜>{{ .Content }}<｜tool▁output▁end｜>
+{{- if $last }}<｜tool▁outputs▁end｜>{{- end }}
+{{- end }}
+{{- if and $last (ne .Role "assistant") }}<｜Assistant｜>{{- end }}
+{{- end }}"""
 
 ### SAMPLING ###
 

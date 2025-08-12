@@ -1,39 +1,40 @@
 #  ollama create mistral-nemo-2407:q6_k_l -f modelfiles/Modelfile-mistral
 
-#  ollama create mistral-large-instruct-2411:iq2_m -f modelfiles/Modelfile-mistral
+#  ollama create mistral-small-3.2-24b-2506-ud:q6_k_xl -f modelfiles/Modelfile-mistral
 
-FROM ../Mistral-Large-Instruct-2411-IQ2_M.gguf
+FROM ../mistral-small-3-2-24b-instruct-2506-ud-q6-k-xl/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf
+FROM ../mistral-small-3-2-24b-instruct-2506-ud-q6-k-xl/mmproj-BF16.gguf
 
 TEMPLATE """
-{{- if .Messages }}
 {{- range $index, $_ := .Messages }}
-{{- if eq .Role "user" }}
-{{- if and (le (len (slice $.Messages $index)) 2) $.Tools }}[AVAILABLE_TOOLS] {{ $.Tools }}[/AVAILABLE_TOOLS]
-{{- end }}[INST] {{ if and $.System (eq (len (slice $.Messages $index)) 1) }}{{ $.System }}
-
-{{ end }}{{ .Content }}[/INST]
+{{- if eq .Role "system" }}[SYSTEM_PROMPT]{{ .Content }}[/SYSTEM_PROMPT]
+{{- else if eq .Role "user" }}
+{{- if and (le (len (slice $.Messages $index)) 2) $.Tools }}[AVAILABLE_TOOLS]{{ $.Tools }}[/AVAILABLE_TOOLS]
+{{- end }}[INST]{{ .Content }}[/INST]
 {{- else if eq .Role "assistant" }}
-{{- if .Content }} {{ .Content }}
+{{- if .Content }}{{ .Content }}
 {{- if not (eq (len (slice $.Messages $index)) 1) }}</s>
 {{- end }}
-{{- else if .ToolCalls }}[TOOL_CALLS] [
-{{- range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
-{{- end }}]</s>
+{{- else if .ToolCalls }}
+{{- range $i, $_ := .ToolCalls }}[TOOL_CALLS]{{ .Function.Name }}[CALL_ID]{{ $i }}[ARGS]{{ .Function.Arguments }}
+{{- end }}</s>
 {{- end }}
-{{- else if eq .Role "tool" }}[TOOL_RESULTS] {"content": {{ .Content }}}[/TOOL_RESULTS]
+{{- else if eq .Role "tool" }}[TOOL_RESULTS]{"content": {{ .Content }}}[/TOOL_RESULTS]
 {{- end }}
-{{- end }}
-{{- else }}[INST] {{ if .System }}{{ .System }}
-
-{{ end }}{{ .Prompt }}[/INST]
-{{- end }}
-{{ if .Response }} {{ end }}{{ .Response }}
-{{- if .Response }}</s>
 {{- end }}
 """
-PARAMETER stop [INST]
-PARAMETER stop [/INST]
-PARAMETER stop </s>
+PARAMETER stop "[INST]"
+PARAMETER stop "[/INST]"
+PARAMETER stop "</s>"
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+
+# Cline stop tokens
+PARAMETER stop "</tool_call>"
+PARAMETER stop "</tool_response>"
+PARAMETER stop "</write_to_file>"
+PARAMETER stop "</execute_command>"
 
 ### Tuning ##
 
@@ -42,20 +43,20 @@ PARAMETER stop </s>
 #  PARAMETER num_ctx 8192
 #  PARAMETER num_ctx 24572
 #  PARAMETER num_ctx 16384
-PARAMETER num_ctx 16384
-#  PARAMETER temperature 0.2
+PARAMETER num_ctx 32768
+PARAMETER temperature 0.15
 #  PARAMETER top_p 0.8
 
 ### min_p sampling ##
 # min_p works best with a bit of temperature
-PARAMETER temperature 0.2
+#  PARAMETER temperature 0.2
 # 1.0 disables top_p, so we can use min_p
-PARAMETER top_p 1.0
-PARAMETER min_p 0.9
+#  PARAMETER top_p 1.0
+#  PARAMETER min_p 0.9
 ### min_p sampling ##
 
 # fit mistral large
-PARAMETER num_batch 64
+#  PARAMETER num_batch 64
 
 ## For codegen ##
 #  PARAMETER num_keep 512

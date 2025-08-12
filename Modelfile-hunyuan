@@ -1,0 +1,41 @@
+
+# ollama create hunyuan-a13b:q3_k_l -f modelfiles/Modelfile-hunyuan
+
+FROM ../Hunyuan-A13B-Instruct-Q3_K_L.gguf
+
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "</tool_call>"
+PARAMETER stop "</tool_response>"
+PARAMETER stop "</write_to_file>"
+PARAMETER stop "</execute_command>"
+
+#  "<|startoftext|>", "<|extra_0|>", "<|extra_4|>", "<|extra_5|>", "<|eos|>
+#  PARAMETER stop "</thinking>"
+
+# Cline stop words:
+# PARAMETER stop "</thinking>"
+#  PARAMETER stop "</tool_call>"
+#  PARAMETER stop "</tool_response>"
+#  PARAMETER stop "</write_to_file>"
+#  PARAMETER stop "</execute_command>"
+
+
+### Tuning ##
+
+PARAMETER num_ctx 16384
+#  PARAMETER num_predict 32768
+#  PARAMETER num_ctx 131072
+#  PARAMETER num_predict 131072
+
+PARAMETER num_gpu 99
+
+PARAMETER temperature 0.7
+PARAMETER top_k 20
+PARAMETER repeat_penalty 1.05
+PARAMETER presence_penalty 1.5
+# WITH A c! not presense_penalty!
+PARAMETER top_p 0.8
+#  PARAMETER min_p 0.01
+#  PARAMETER num_keep 256

@@ -1,0 +1,97 @@
+
+# ollama create nanonets-ocr:q8_0 -f modelfiles/Modelfile-nanonets-ocr
+
+
+#  FROM ../Qwen3-0.6B-UD-Q4_K_XL.gguf
+
+#  based off of Qwen2_5_VLProcessor
+#   "rope_theta": 1000000.0,
+#    "sliding_window": 32768,
+#      "max_position_embeddings": 128000,
+#  special tokens
+   #   "<|im_start|>",
+   #   "<|im_end|>",
+   #   "<|object_ref_start|>",
+   #   "<|object_ref_end|>",
+   #   "<|box_start|>",
+   #   "<|box_end|>",
+   #   "<|quad_start|>",
+   #   "<|quad_end|>",
+   #   "<|vision_start|>",
+   #   "<|vision_end|>",
+   #   "<|vision_pad|>",
+   #   "<|image_pad|>",
+   #   "<|video_pad|>"
+
+FROM ../nanonets-ocr-s-q8_0.gguf
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+PARAMETER stop "<|vision_start|>"
+PARAMETER stop "<|vision_end|>"
+
+
+
+### Tuning ##
+
+#  65536 - 131072
+PARAMETER num_ctx 32768
+#  PARAMETER num_predict 32768
+
+PARAMETER num_gpu 99
+
+PARAMETER temperature 0.0
+PARAMETER top_k 20
+PARAMETER repeat_penalty 1.05
+PARAMETER top_p 0.9
+
+#  PARAMETER min_p 0.01
+#  PARAMETER num_keep 256
+
+
+# Sampling for deterministic OCR
+#  PARAMETER temperature 0.0
+#  PARAMETER top_k 1
+#  PARAMETER top_p 0.1
+#  PARAMETER repeat_penalty 1.15
+
+#  SYSTEM """You are an advanced OCR assistant specialised in converting document images to structured markdown. Extract text accurately while preserving formatting, tables, and mathematical expressions in LaTeX format."""
+
+TEMPLATE """
+{{- range $i, $msg := .Messages }}
+{{- if and (eq $i 0) (ne $msg.Role "system") }}
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+{{ end }}
+<|im_start|>{{ $msg.Role }}
+{{- if $msg.Content }}
+{{ $msg.Content }}<|im_end|>
+{{ else }}
+{{- range $content := $msg.Content }}
+{{- if eq $content.Type "image" }}
+<|vision_start|><|image_pad|><|vision_end|>
+{{- else if eq $content.Type "video" }}
+<|vision_start|><|video_pad|><|vision_end|>
+{{- else if $content.Text }}
+{{ $content.Text }}
+{{- end }}
+{{- end }}
+<|im_end|>
+{{ end }}
+{{ end }}
+<|im_start|>assistant
+"""
+
+#  basic version
+#  TEMPLATE """
+#  {{- range $i, $msg := .Messages }}
+#  {{- if and (eq $i 0) (ne $msg.Role "system") }}
+#  <|im_start|>system
+#  You are a helpful assistant.<|im_end|>
+#  {{ end }}
+#  <|im_start|>{{ $msg.Role }}
+#  {{ $msg.Content }}<|im_end|>
+#  {{ end }}
+#  <|im_start|>assistant
+#  """

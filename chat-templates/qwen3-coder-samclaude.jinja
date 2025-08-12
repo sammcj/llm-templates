@@ -1,0 +1,145 @@
+{% macro render_item_list(item_list, tag_name='required') %}
+    {%- if item_list is defined and item_list is iterable and item_list | length > 0 %}
+        {%- if tag_name %}{{- '\n<' ~ tag_name ~ '>' -}}{% endif %}
+            {{- '[' }}
+                {%- for item in item_list -%}
+                    {%- if loop.index > 1 %}{{- ", "}}{% endif -%}
+                    {%- if item is string -%}
+                        {{ "`" ~ item ~ "`" }}
+                    {%- else -%}
+                        {{ item }}
+                    {%- endif -%}
+                {%- endfor -%}
+            {{- ']' }}
+        {%- if tag_name %}{{- '</' ~ tag_name ~ '>' -}}{% endif %}
+    {%- endif %}
+{% endmacro %}
+
+{%- if messages[0]["role"] == "system" %}
+    {%- set system_message = messages[0]["content"] %}
+    {%- set loop_messages = messages[1:] %}
+{%- else %}
+    {%- set loop_messages = messages %}
+{%- endif %}
+
+{%- if not tools is defined %}
+    {%- set tools = [] %}
+{%- endif %}
+
+{%- if system_message is defined %}
+    {{- "<|im_start|>system\n" + system_message }}
+{%- else %}
+    {%- if tools is iterable and tools | length > 0 %}
+        {{- "<|im_start|>system\nYou are Qwen, a helpful AI assistant that runs in the Cline agentic coding tool within VSCode and can interact with tools to solve tasks." }}
+    {%- endif %}
+{%- endif %}
+{%- if tools is iterable and tools | length > 0 %}
+    {{- "\n\n# Tool Use Formatting\n\n" }}
+    {{- "Tool use is formatted using XML-style tags. The tool name is enclosed in opening and closing tags, and each parameter is similarly enclosed within its own set of tags. Here's the structure:\n\n" }}
+    {{- "<tool_name>\n<parameter1_name>value1</parameter1_name>\n<parameter2_name>value2</parameter2_name>\n...\n</tool_name>\n\n" }}
+    {{- "For example:\n\n<read_file>\n<path>src/main.js</path>\n</read_file>\n\n" }}
+    {{- "IMPORTANT: Always adhere to this EXACT format unless the user explicitly specifies otherwise. Only use the tool name as the XML tag.\n\n" }}
+    {{- "# Available Tools\n\n" }}
+    {{- "<tools>" }}
+    {%- for tool in tools %}
+        {%- if tool.function is defined %}
+            {%- set tool = tool.function %}
+        {%- endif %}
+        {{- "\n<tool>\n<name>" ~ tool.name ~ "</name>" }}
+        {{- '\n<description>' ~ (tool.description | trim) ~ '</description>' }}
+        {{- '\n<parameters>' }}
+        {%- for param_name, param_fields in tool.parameters.properties|items %}
+            {{- '\n<parameter>' }}
+            {{- '\n<name>' ~ param_name ~ '</name>' }}
+            {%- if param_fields.type is defined %}
+                {{- '\n<type>' ~ (param_fields.type | string) ~ '</type>' }}
+            {%- endif %}
+            {%- if param_fields.description is defined %}
+                {{- '\n<description>' ~ (param_fields.description | trim) ~ '</description>' }}
+            {%- endif %}
+            {{- render_item_list(param_fields.enum, 'enum') }}
+            {%- set handled_keys = ['type', 'description', 'enum', 'required'] %}
+            {%- for json_key in param_fields %}
+                {%- if json_key not in handled_keys %}
+                    {%- set normed_json_key = json_key | replace("-", "_") | replace(" ", "_") | replace("$", "") %}
+                    {%- if param_fields[json_key] is mapping %}
+                        {{- '\n<' ~ normed_json_key ~ '>' ~ (param_fields[json_key] | tojson | safe) ~ '</' ~ normed_json_key ~ '>' }}
+                    {%- else %}
+                        {{- '\n<' ~ normed_json_key ~ '>' ~ (param_fields[json_key] | string) ~ '</' ~ normed_json_key ~ '>' }}
+                    {%- endif %}
+                {%- endif %}
+            {%- endfor %}
+            {{- render_item_list(param_fields.required, 'required') }}
+            {{- '\n</parameter>' }}
+        {%- endfor %}
+        {{- render_item_list(tool.parameters.required, 'required') }}
+        {{- '\n</parameters>' }}
+        {%- if tool.return is defined %}
+            {%- if tool.return is mapping %}
+                {{- '\n<return>' ~ (tool.return | tojson | safe) ~ '</return>' }}
+            {%- else %}
+                {{- '\n<return>' ~ (tool.return | string) ~ '</return>' }}
+            {%- endif %}
+        {%- endif %}
+        {{- '\n</tool>' }}
+    {%- endfor %}
+    {{- "\n</tools>" }}
+    {{- '\n\n# CRITICAL INSTRUCTIONS:\n' }}
+    {{- '1. When you need to use a tool, output ONLY the tool call in the exact XML format shown above. Do not include any other text, explanations, or XML tags.\n' }}
+    {{- '2. Use the tool name directly as the XML tag (e.g., <read_file>...</read_file>), NOT wrapped in <tool_call> or <function> tags.\n' }}
+    {{- '3. NEVER add random XML closing tags that are not part of real tool calls in your responses.\n' }}
+    {{- '4. If you are not making a tool call, respond normally without any XML formatting.\n' }}
+    {{- '5. YOU MUST ONLY USE ONE TOOL PER MESSAGE. Wait for the result before using another tool.\n' }}
+    {{- '6. YOU MUST ONLY USE REAL TOOLS AND MCP SERVERS THAT YOU HAVE BEEN GIVEN ACCESS TO, you MUST NOT guess or make up tools or parameters.\n' }}
+    {{- '7. Required parameters MUST be specified.\n' }}
+{%- endif %}
+{%- if system_message is defined %}
+    {{- '<|im_end|>\n' }}
+{%- else %}
+    {%- if tools is iterable and tools | length > 0 %}
+        {{- '<|im_end|>\n' }}
+    {%- endif %}
+{%- endif %}
+{%- for message in loop_messages %}
+    {%- if message.role == "assistant" and message.tool_calls is defined and message.tool_calls is iterable and message.tool_calls | length > 0 %}
+        {{- '<|im_start|>' + message.role }}
+        {%- if message.content is defined and message.content is string and message.content | trim | length > 0 %}
+            {{- '\n' + message.content | trim + '\n' }}
+        {%- endif %}
+        {%- for tool_call in message.tool_calls %}
+            {%- if tool_call.function is defined %}
+                {%- set tool_call = tool_call.function %}
+            {%- endif %}
+            {{- '\n<' + tool_call.name + '>\n' }}
+            {%- if tool_call.arguments is defined %}
+                {%- for args_name, args_value in tool_call.arguments|items %}
+                    {{- '<' + args_name + '>' }}
+                    {%- set args_value = args_value if args_value is string else args_value | string %}
+                    {{- args_value }}
+                    {{- '</' + args_name + '>\n' }}
+                {%- endfor %}
+            {%- endif %}
+            {{- '</' + tool_call.name + '>' }}
+        {%- endfor %}
+        {{- '<|im_end|>\n' }}
+    {%- elif message.role == "user" or message.role == "system" or message.role == "assistant" %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>' + '\n' }}
+    {%- elif message.role == "tool" %}
+        {%- if loop.previtem and loop.previtem.role != "tool" %}
+            {{- '<|im_start|>user\n' }}
+        {%- endif %}
+        {{- '<tool_response>\n' }}
+        {{- message.content }}
+        {{- '\n</tool_response>\n' }}
+        {%- if not loop.last and loop.nextitem.role != "tool" %}
+            {{- '<|im_end|>\n' }}
+        {%- elif loop.last %}
+            {{- '<|im_end|>\n' }}
+        {%- endif %}
+    {%- else %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' }}
+    {%- endif %}
+{%- endfor %}
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+{%- endif %}
