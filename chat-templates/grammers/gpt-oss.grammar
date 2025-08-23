@@ -1,0 +1,4 @@
+root ::= analysis? start final .+
+analysis ::= "<|channel|>analysis<|message|>" ( [^<] | "<" [^|] | "<|" [^e] )* "<|end|>"
+start ::= "<|start|>assistant"
+final ::= "<|channel|>final<|message|>"
